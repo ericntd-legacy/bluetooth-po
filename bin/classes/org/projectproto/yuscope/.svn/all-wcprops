@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/repos/!svn/ver/21/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope
+END
+WaveformView.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope/WaveformView.java
+END
+BluetoothCommService.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope/BluetoothCommService.java
+END
+MenuSettingsActivity.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/repos/!svn/ver/21/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope/MenuSettingsActivity.java
+END
+BluetoothOscilloscope.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/!svn/ver/21/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope/BluetoothOscilloscope.java
+END
+DbAdapter.java
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope/DbAdapter.java
+END
+BluetoothRfcommClient.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope/BluetoothRfcommClient.java
+END
+DeviceListActivity.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope/DeviceListActivity.java
+END
+WaveformPlotThread.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/src/org/projectproto/yuscope/WaveformPlotThread.java
+END

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <public type="drawable" name="icon" id="0x7f020000" />
+    <public type="layout" name="device_list" id="0x7f030000" />
+    <public type="layout" name="device_name" id="0x7f030001" />
+    <public type="layout" name="main" id="0x7f030002" />
+    <public type="color" name="background_color" id="0x7f040000" />
+    <public type="color" name="ch1_color" id="0x7f040001" />
+    <public type="color" name="ch2_color" id="0x7f040002" />
+    <public type="color" name="label_color" id="0x7f040003" />
+    <public type="color" name="timebase_color" id="0x7f040004" />
+    <public type="color" name="status_color" id="0x7f040005" />
+    <public type="string" name="app_name" id="0x7f050000" />
+    <public type="string" name="title_connecting" id="0x7f050001" />
+    <public type="string" name="title_connected_to" id="0x7f050002" />
+    <public type="string" name="title_not_connected" id="0x7f050003" />
+    <public type="string" name="scanning" id="0x7f050004" />
+    <public type="string" name="select_device" id="0x7f050005" />
+    <public type="string" name="none_paired" id="0x7f050006" />
+    <public type="string" name="none_found" id="0x7f050007" />
+    <public type="string" name="title_paired_devices" id="0x7f050008" />
+    <public type="string" name="title_other_devices" id="0x7f050009" />
+    <public type="string" name="button_scan" id="0x7f05000a" />
+    <public type="string" name="button_connect" id="0x7f05000b" />
+    <public type="string" name="status_label" id="0x7f05000c" />
+    <public type="string" name="status_off" id="0x7f05000d" />
+    <public type="string" name="status_on" id="0x7f05000e" />
+    <public type="string" name="ch1_scale_default" id="0x7f05000f" />
+    <public type="string" name="ch2_scale_default" id="0x7f050010" />
+    <public type="string" name="timebase_default" id="0x7f050011" />
+    <public type="string" name="not_connected" id="0x7f050012" />
+    <public type="string" name="bt_not_enabled_leaving" id="0x7f050013" />
+    <public type="id" name="title_paired_devices" id="0x7f060000" />
+    <public type="id" name="paired_devices" id="0x7f060001" />
+    <public type="id" name="title_new_devices" id="0x7f060002" />
+    <public type="id" name="new_devices" id="0x7f060003" />
+    <public type="id" name="button_scan" id="0x7f060004" />
+    <public type="id" name="txt_appname" id="0x7f060005" />
+    <public type="id" name="Waveform" id="0x7f060006" />
+    <public type="id" name="WaveformArea" id="0x7f060007" />
+    <public type="id" name="txt_ch1pos" id="0x7f060008" />
+    <public type="id" name="txt_ch2pos" id="0x7f060009" />
+    <public type="id" name="run_settings" id="0x7f06000a" />
+    <public type="id" name="txt_status" id="0x7f06000b" />
+    <public type="id" name="tbtn_runtoggle" id="0x7f06000c" />
+    <public type="id" name="ToggleButton01" id="0x7f06000d" />
+    <public type="id" name="horizontal_settings" id="0x7f06000e" />
+    <public type="id" name="horizontal_values" id="0x7f06000f" />
+    <public type="id" name="txt_timebase_label" id="0x7f060010" />
+    <public type="id" name="txt_timebase" id="0x7f060011" />
+    <public type="id" name="horizontal_adjusts" id="0x7f060012" />
+    <public type="id" name="btn_timebase_decrease" id="0x7f060013" />
+    <public type="id" name="btn_timebase_increase" id="0x7f060014" />
+    <public type="id" name="position_settings" id="0x7f060015" />
+    <public type="id" name="txt_position_label" id="0x7f060016" />
+    <public type="id" name="btn_position_up" id="0x7f060017" />
+    <public type="id" name="btn_position_down" id="0x7f060018" />
+    <public name="vertical_settings" type="id" id="0x7f060019"/>
+    <public type="id" name="btn_scale_increase" id="0x7f06001a" />
+    <public type="id" name="btn_scale_decrease" id="0x7f06001b" />
+    <public type="id" name="rg_channels" id="0x7f06001c" />
+    <public type="id" name="rbtn_ch1" id="0x7f06001d" />
+    <public name="txt_ch1_scale" type="id" id="0x7f06001e"/>
+    <public type="id" name="rbtn_ch2" id="0x7f06001f" />
+    <public type="id" name="txt_ch2_scale" id="0x7f060020" />
+    <public type="id" name="bluetooth_settings" id="0x7f060021" />
+    <public id="0x7f060022" name="txt_btstatus" type="id"/>
+    <public id="0x7f060023" type="id" name="button_connect"/>
+    <item type="id" name="hr_value"></item>
+    <item type="id" name="spo_value"></item>
+    <item type="id" name="txt_hr_label"></item>
+    <item type="id" name="txt_hr_value"></item>
+    <item type="id" name="txt_spo_label"></item>
+    <item type="id" name="txt_spo_value"></item>
+</resources>

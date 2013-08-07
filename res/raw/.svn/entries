@@ -1,0 +1,54 @@
+8
+
+dir
+13
+https://172.25.134.153/svn/android/sandbox/TeleHealthWidget/trunk/res/raw
+https://172.25.134.153/svn/android
+
+
+
+2012-03-27T16:28:39.827121Z
+9
+gmsmhms
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+ed36c5a6-e830-4996-930e-95f3cb7a63ce
+
+sound2.ogg
+file
+
+
+
+
+2012-03-27T08:31:12.000000Z
+0895e206386fae7c11504ec6c676f341
+2012-03-27T16:28:39.827121Z
+9
+gmsmhms
+has-props
+
+sound3.ogg
+file
+
+
+
+
+2012-03-27T08:31:12.000000Z
+bf05830c1d75fd3467d2ed7569a60942
+2012-03-27T16:28:39.827121Z
+9
+gmsmhms
+has-props
+

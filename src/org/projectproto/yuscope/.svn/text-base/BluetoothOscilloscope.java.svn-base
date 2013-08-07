@@ -1,0 +1,683 @@
+/***************************************
+ * 
+ * Android Bluetooth Oscilloscope
+ * yus	-	projectproto.blogspot.com
+ * September 2010
+ *  
+ ***************************************/
+
+package org.projectproto.yuscope;
+
+//import com.lit.poc.bluepulse.R;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.util.Date;
+
+import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.os.PowerManager;
+import android.text.Editable;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.MenuInflater;
+import android.view.View;
+import android.view.Window;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.ToggleButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.TextView.OnEditorActionListener;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+
+public class BluetoothOscilloscope extends Activity implements  Button.OnClickListener{
+	// Logging
+	private static final String TAG = "BluetoothPulseOximeter";
+	
+	// Run/Pause status
+    private boolean bReady = false;
+
+    // Message types sent from the BluetoothCommService Handler
+    public static final int MESSAGE_STATE_CHANGE = 1;
+    public static final int MESSAGE_READ = 2;
+    public static final int MESSAGE_WRITE = 3;
+    public static final int MESSAGE_DEVICE_NAME = 4;
+    public static final int MESSAGE_TOAST = 5;
+
+    // Key names received from the BluetoothCommService Handler
+    public static final String DEVICE_NAME = "device_name";
+    public static final String TOAST = "toast";
+
+    // Intent request codes
+    private static final int REQUEST_CONNECT_DEVICE = 1;
+    private static final int REQUEST_ENABLE_BT = 2;
+    
+    // bt-uart constants
+//    private static final int MAX_SAMPLES = 640;
+//    private static final int  MAX_LEVEL	= 240;
+    private static final int MAX_SAMPLES = 550;
+    private static final int  MAX_LEVEL	= 350;
+    private static final int  DATA_START = (MAX_LEVEL + 1);
+    private static final int  DATA_END = (MAX_LEVEL + 2);
+
+    private static final byte  REQ_DATA = 0x00;
+    private static final byte  ADJ_HORIZONTAL = 0x01;
+    private static final byte  ADJ_VERTICAL = 0x02;
+    private static final byte  ADJ_POSITION = 0x03;
+
+    private static final byte  CHANNEL1 = 0x01;
+    private static final byte  CHANNEL2 = 0x02;
+
+    // Layout Views
+    private TextView mBTStatus;
+    private TextView time_per_div;
+    private TextView ch1_scale, ch2_scale;
+    private TextView ch1pos_label, ch2pos_label;
+    private TextView pulse_rate, pulse_sat;
+    private TextView txtHost, txtPort;
+    private RadioButton rb1, rb2;
+    private Button timebase_inc, timebase_dec;
+    private Button btn_scale_up, btn_scale_down;
+    private Button btn_pos_up, btn_pos_down;
+    private Button mConnectButton;
+    private ToggleButton run_buton;
+    
+    // Name of the connected device
+    //private String mConnectedDeviceName = null;
+    private String mConnectedDeviceName = "No Bluetooth Device Found!";
+    // Local Bluetooth adapter
+    private BluetoothAdapter mBluetoothAdapter = null;
+    // Member object for the RFCOMM services
+    private BluetoothCommService mRfcommClient = null;
+    
+    protected PowerManager.WakeLock mWakeLock;
+    
+    public WaveformView mWaveform = null;
+    
+//    static String[] timebase = {"5us", "10us", "20us", "50us", "100us", "200us", "500us", "1ms", "2ms", "5ms", "10ms", "20ms", "50ms" };
+//	static String[] ampscale = {"10mV", "20mV", "50mV", "100mV", "200mV", "500mV", "1V", "2V", "GND"};
+	static String[] timebase = {"500ms", "600ms", "700ms", "800ms", "900ms", "1s", "1.1s", "1.2s", "1.4s", "1.4s", "1.5s", "1.6s", "1.7s" };
+	static String[] ampscale = {"1", "5", "10", "15", "20", "25", "30", "35", "40"};
+	static byte timebase_index = 5;
+	static byte ch1_index = 6, ch2_index = 6;
+	static byte ch1_pos = 0, ch2_pos = 0;	// 0 to 60
+//	private int[] ch1_data = new int[MAX_SAMPLES/2];
+//	private int[] ch2_data = new int[MAX_SAMPLES/2];
+	private int[] ch1_data = new int[MAX_SAMPLES];
+	private int[] ch2_data = new int[MAX_SAMPLES];	
+	
+	private int dataIndex=0, dataIndex1=0, dataIndex2=0;
+	private boolean bDataAvailable=false;
+	
+	private int frameCount = 0;
+	private int syncFrame = 0;
+	
+//	private EditText editTextHost;
+//	private EditText editTextPort;
+	private CheckBox chkboxEnableUDP;
+	private Button buttonTestUDP;
+	private String destination_host;
+	private int destination_port;
+	private boolean send_udp = false;
+	private DatagramSocket datagramSocket;
+	
+	SharedPreferences bposettings = null;
+	SharedPreferences.Editor bposettingseditor = null;
+	//public static final String PREF_FILE = "BluetoothPulseOximeterPref";
+	public static final String PREF_FILE = "org.projectproto.yuscope_preferences";
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Set up the window layout
+        requestWindowFeature(Window.FEATURE_NO_TITLE);        
+        setContentView(R.layout.main);
+        
+        mBTStatus = (TextView) findViewById(R.id.txt_btstatus);
+
+        // Get local Bluetooth adapter
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        // If the adapter is null, then Bluetooth is not supported
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        // Prevent phone from sleeping
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        this.mWakeLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "My Tag"); 
+        this.mWakeLock.acquire();
+        
+        bposettings = PreferenceManager.getDefaultSharedPreferences(this);
+        // Log.v("SharedPreferencesName", PreferenceManager.);
+        // bposettings = getSharedPreferences(PREF_FILE, MODE_PRIVATE);
+        bposettingseditor = bposettings.edit();
+        
+        ch1_scale = (TextView) findViewById(R.id.txt_ch1_scale);
+        ch1_scale.setText(ampscale[ch1_index]);
+        pulse_rate = (TextView) findViewById(R.id.txt_hr_value);
+        pulse_sat = (TextView) findViewById(R.id.txt_spo_value);
+        txtHost = (TextView) findViewById(R.id.txt_host_value);
+        txtPort = (TextView) findViewById(R.id.txt_port_value);
+        chkboxEnableUDP = (CheckBox) this.findViewById(R.id.chkbox_enable_udp);
+		buttonTestUDP = (Button) this.findViewById(R.id.button_udp);
+		mConnectButton = (Button) findViewById(R.id.button_connect);
+		mWaveform = (WaveformView)findViewById(R.id.WaveformArea);
+		
+		SetListeners();
+
+    }
+    
+    @Override
+    public void onStart() {
+        super.onStart();
+        // If BT is not on, request that it be enabled.
+        // setupOscilloscope() will then be called during onActivityResult
+        if (!mBluetoothAdapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+        // Otherwise, setup the Oscillosope session
+        } else {
+            if (mRfcommClient == null) setupOscilloscope();
+        }
+        RefreshSettings();
+    }
+
+    @Override
+    public synchronized void onResume() {
+        super.onResume();
+
+        // Performing this check in onResume() covers the case in which BT was
+        // not enabled during onStart(), so we were paused to enable it...
+        // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
+        if (mRfcommClient != null) {
+            // Only if the state is STATE_NONE, do we know that we haven't started already
+            if (mRfcommClient.getState() == BluetoothCommService.STATE_NONE) {
+              // Start the Bluetooth  RFCOMM services
+              mRfcommClient.start();
+            }
+        }
+        frameCount = 0;
+        RefreshSettings();
+    }
+
+    private void setupOscilloscope() {
+        
+//        time_per_div = (TextView)findViewById(R.id.txt_timebase);
+//        time_per_div.setText(timebase[timebase_index]);
+//        timebase_inc = (Button) findViewById(R.id.btn_timebase_increase);
+//        timebase_dec = (Button) findViewById(R.id.btn_timebase_decrease);
+//        timebase_inc.setOnClickListener(this);
+//        timebase_dec.setOnClickListener(this);
+        
+//        run_buton = (ToggleButton) findViewById(R.id.tbtn_runtoggle);
+//        run_buton.setOnClickListener(this);
+//        rb1 = (RadioButton)findViewById(R.id.rbtn_ch1);
+//        rb2 = (RadioButton)findViewById(R.id.rbtn_ch2);
+        
+//        ch1_scale = (TextView) findViewById(R.id.txt_ch1_scale);
+//        ch2_scale = (TextView) findViewById(R.id.txt_ch2_scale);
+//        ch1_scale.setText(ampscale[ch1_index]);
+//        ch2_scale.setText(ampscale[ch2_index]);
+//        pulse_rate = (TextView) findViewById(R.id.txt_hr_value);
+//        pulse_sat = (TextView) findViewById(R.id.txt_spo_value);
+//        txtHost = (TextView) findViewById(R.id.txt_host_value);
+//        txtPort = (TextView) findViewById(R.id.txt_port_value);
+        
+//        btn_scale_up = (Button) findViewById(R.id.btn_scale_increase);
+//        btn_scale_down = (Button) findViewById(R.id.btn_scale_decrease);
+//        btn_scale_up.setOnClickListener(this);
+//        btn_scale_down.setOnClickListener(this);
+        
+//        btn_pos_up = (Button) findViewById(R.id.btn_position_up);
+//        btn_pos_down = (Button) findViewById(R.id.btn_position_down);
+//        btn_pos_up.setOnClickListener(this);
+//        btn_pos_down.setOnClickListener(this);
+        
+//        ch1pos_label = (TextView) findViewById(R.id.txt_ch1pos);
+//        ch2pos_label = (TextView) findViewById(R.id.txt_ch2pos);
+//        ch1pos_label.setPadding(0, toScreenPos(ch1_pos), 0, 0);
+//        ch2pos_label.setPadding(0, toScreenPos(ch2_pos), 0, 0);
+        
+//        editTextHost = (EditText) this.findViewById(R.id.edit_host_value);
+//		editTextPort = (EditText) this.findViewById(R.id.edit_port_value);
+//		chkboxEnableUDP = (CheckBox) this.findViewById(R.id.chkbox_enable_udp);
+//		buttonTestUDP = (Button) this.findViewById(R.id.button_udp);
+//		SetListeners();
+        
+//        mConnectButton = (Button) findViewById(R.id.button_connect);
+//        mConnectButton.setOnClickListener(new OnClickListener() {
+//			public void onClick(View arg0) {
+//				BTConnect();
+//			}
+//		});
+
+        // Initialize the BluetoothCommService to perform bluetooth connections
+        if (mRfcommClient == null) {
+        	mRfcommClient = new BluetoothCommService(this, mHandler);
+        }
+        
+//        mWaveform = (WaveformView)findViewById(R.id.WaveformArea);
+        
+        frameCount = 0;
+        
+        for(int i=0; i<MAX_SAMPLES; i++){
+        	ch1_data[i] = 0;
+        	ch2_data[i] = 0;
+        }
+        
+        RefreshSettings();
+        
+    }
+    
+    private void RefreshSettings() {
+    	if (!bposettings.contains("enable_udp_stream")){
+        	Log.v("setupOscilloscope", "PREF_FILE does not contain 'enable_udp_stream' key");
+        	bposettingseditor.putBoolean("enable_udp_stream", false);
+        	bposettingseditor.commit();
+        }
+        send_udp = bposettings.getBoolean("enable_udp_stream", false);
+        chkboxEnableUDP.setChecked(send_udp);
+        if (!bposettings.contains("destination_host")){
+        	Log.v("setupOscilloscope", "PREF_FILE does not contain 'destination_host' key");
+        	bposettingseditor.putString("destination_host", "127.0.0.1");
+        	bposettingseditor.commit();
+        }
+        destination_host = bposettings.getString("destination_host", "127.0.0.1");
+        txtHost.setText(destination_host);
+//        editTextHost.setText(destination_host);
+        if (!bposettings.contains("destination_port")){
+        	Log.v("setupOscilloscope", "PREF_FILE does not contain 'destination_port' key");
+        	bposettingseditor.putString("destination_port", "12345");
+        	bposettingseditor.commit();
+        }
+        destination_port = Integer.parseInt(bposettings.getString("destination_port", "12345"));
+        txtPort.setText(bposettings.getString("destination_port", "12345"));
+//        editTextPort.setText(bposettings.getString("destination_port", "12345"));
+        ChangeDestination();
+    }
+    
+    private void SetListeners() {
+//		editTextHost.setOnEditorActionListener(new OnEditorActionListener() {
+//			public boolean onEditorAction(TextView textview, int i,
+//					KeyEvent keyevent) {
+//				chkboxEnableUDP.setChecked(false);
+//				send_udp = false;
+//				ChangeDestination();
+//				return true;
+//			}
+//		});
+//		editTextPort.setOnEditorActionListener(new OnEditorActionListener() {
+//			public boolean onEditorAction(TextView textview, int i,
+//					KeyEvent keyevent) {
+//				chkboxEnableUDP.setChecked(false);
+//				send_udp = false;
+//				ChangeDestination();
+//				return true;
+//			}
+//		});
+		chkboxEnableUDP.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				send_udp = isChecked;
+				bposettingseditor.putBoolean("enable_udp_stream", isChecked);
+				bposettingseditor.commit();
+			}
+		});
+		buttonTestUDP.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				SendLiteralByUdp();
+				Log.v("TestUdp#onClick", "ButtonSendDebugMessage");
+			}
+		});
+		mConnectButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View arg0) {
+				BTConnect();
+			}
+		});
+	}
+    
+    void ChangeDestination() {
+//    	Editable editable_host = editTextHost.getEditableText();
+//		destination_host = editable_host.toString();
+//		bposettingseditor.putString("destination_host", destination_host);
+//		bposettingseditor.commit();
+//		Editable editable_port = editTextPort.getEditableText();
+//		String string_port = editable_port.toString();
+//		bposettingseditor.putString("destination_port", string_port);
+//		bposettingseditor.commit();
+		try {
+			datagramSocket = null;
+			datagramSocket = new DatagramSocket();
+		} catch (SocketException e) {
+			// e.printStackTrace();
+			Log.e(TAG, e.toString());
+		}
+//		send_udp = bposettings.getBoolean("enable_udp_stream", false);
+//		chkboxEnableUDP.setChecked(send_udp);
+	}
+    
+    @Override
+    public void  onClick(View v){
+    	int buttonID;
+    	buttonID = v.getId();
+//    	switch (buttonID){
+//    	case R.id.btn_position_up :
+////    		if(rb1.isChecked() && (ch1_pos<38) ){
+//    		if(rb1.isChecked() && (ch1_pos<60) ){
+//    			ch1_pos += 1; ch1pos_label.setPadding(0, toScreenPos(ch1_pos), 0, 0);
+//    			sendMessage( new String(new byte[] {ADJ_POSITION, CHANNEL1, ch1_pos}) );
+//    		}
+////    		else if(rb2.isChecked() && (ch2_pos<38) ){
+//    		else if(rb2.isChecked() && (ch2_pos<60) ){
+//    			ch2_pos += 1; ch2pos_label.setPadding(0, toScreenPos(ch2_pos), 0, 0);
+//    			sendMessage( new String(new byte[] {ADJ_POSITION, CHANNEL2, ch2_pos}) );
+//    		}
+//    		break;
+//    	case R.id.btn_position_down :
+////    		if(rb1.isChecked() && (ch1_pos>4) ){
+//    		if(rb1.isChecked() && (ch1_pos>1) ){
+//    			ch1_pos -= 1; ch1pos_label.setPadding(0, toScreenPos(ch1_pos), 0, 0);
+//    			sendMessage( new String(new byte[] {ADJ_POSITION, CHANNEL1, ch1_pos}) );
+//    		}
+////    		else if(rb2.isChecked() && (ch2_pos>4) ){
+//    		else if(rb2.isChecked() && (ch2_pos>1) ){
+//    			ch2_pos -= 1; ch2pos_label.setPadding(0, toScreenPos(ch2_pos), 0, 0);
+//    			sendMessage( new String(new byte[] {ADJ_POSITION, CHANNEL2, ch2_pos}) );
+//    		}
+//    		break;
+//    	case R.id.btn_scale_increase :
+//    		if(rb1.isChecked() && (ch1_index>0)){
+//    			//ch1_scale.setText(ampscale[--ch1_index]);
+//    			sendMessage( new String(new byte[] {ADJ_VERTICAL, CHANNEL1, ch1_index}) );
+//    		}
+//    		else if(rb2.isChecked() && (ch2_index>0)){
+//    			//ch2_scale.setText(ampscale[--ch2_index]);
+//    			sendMessage( new String(new byte[] {ADJ_VERTICAL, CHANNEL2, ch2_index}) );
+//    		}
+//    		break;
+//    	case R.id.btn_scale_decrease :
+//    		if(rb1.isChecked() && (ch1_index<(ampscale.length-1))){
+//    			ch1_scale.setText(ampscale[++ch1_index]);
+//    			sendMessage( new String(new byte[] {ADJ_VERTICAL, CHANNEL1, ch1_index}) );
+//    		}
+//    		else if(rb2.isChecked() && (ch2_index<(ampscale.length-1))){
+//    			ch2_scale.setText(ampscale[++ch2_index]);
+//    			sendMessage( new String(new byte[] {ADJ_VERTICAL, CHANNEL2, ch2_index}) );
+//    		}
+//    		break;
+//    	case R.id.btn_timebase_increase :
+//    		if(timebase_index<(timebase.length-1)){
+//    			time_per_div.setText(timebase[++timebase_index]);
+//    			sendMessage( new String(new byte[] {ADJ_HORIZONTAL, timebase_index}) );
+//    		}
+//    		break;
+//    	case R.id.btn_timebase_decrease :
+//    		if(timebase_index>0){
+//    			time_per_div.setText(timebase[--timebase_index]);
+//    			sendMessage( new String(new byte[] {ADJ_HORIZONTAL, timebase_index}) );
+//    		}
+//    		break;
+//    	case R.id.tbtn_runtoggle :
+//    		if(run_buton.isChecked()){
+//    			sendMessage( new String(new byte[] {
+//    					ADJ_HORIZONTAL, timebase_index,
+//    					ADJ_VERTICAL, CHANNEL1, ch1_index,
+//    					ADJ_VERTICAL, CHANNEL2, ch2_index,
+//    					ADJ_POSITION, CHANNEL1, ch1_pos,
+//    					ADJ_POSITION, CHANNEL2, ch2_pos,
+//    					REQ_DATA}) );
+//    			bReady = true;
+//    		}
+//    		else{
+//    			bReady = false;
+//    		}
+//    		break;
+//    	}
+    }
+    
+    private void BTConnect(){
+    	Intent serverIntent = new Intent(this, DeviceListActivity.class);
+        startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
+    }
+    
+    private int toScreenPos(byte position){
+    	//return ( (int)MAX_LEVEL - (int)position*6 - 7);
+    	return ( (int)MAX_LEVEL - (int)position*7 - 8);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Stop the Bluetooth RFCOMM services
+        if (mRfcommClient != null) mRfcommClient.stop();
+        // release screen being on
+        if (mWakeLock.isHeld()) { 
+            mWakeLock.release();
+        }
+    }
+
+    /**
+     * Sends a message.
+     * @param message  A string of text to send.
+     */
+    private void sendMessage(String message) {
+        // Check that we're actually connected before trying anything
+        if (mRfcommClient.getState() != BluetoothCommService.STATE_CONNECTED) {
+            Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // Check that there's actually something to send
+//        if (message.length() > 0) {
+//            // Get the message bytes and tell the BluetoothCommService to write
+//            byte[] send = message.getBytes();
+//            mRfcommClient.write(send);
+//        }
+    }
+    
+    private void SendMessageByUdp(String string_to_be_sent) {
+		try {
+			byte[] byte_array = string_to_be_sent.getBytes();
+			InetAddress inet_address = InetAddress.getByName(destination_host);
+			DatagramPacket datagram_packet = new DatagramPacket(byte_array,
+					byte_array.length, inet_address, destination_port);
+			// DatagramSocket datagram_socket = new DatagramSocket();
+			if (datagramSocket==null) {
+				// datagramSocket.close();
+				// datagramSocket = null;
+				datagramSocket = new DatagramSocket();
+			}
+			datagramSocket.send(datagram_packet);		
+		} catch (IOException io_exception) {
+			datagramSocket = null;
+			Log.e(TAG, io_exception.toString());
+		}
+	}
+    
+    private void SendLiteralByUdp() {
+//		Editable editable_host = editTextHost.getEditableText();
+//		destination_host = editable_host.toString();
+//		Editable editable_port = editTextPort.getEditableText();
+//		String string_port = editable_port.toString();
+//		destination_port = Integer.parseInt(string_port);
+		
+		SendMessageByUdp("[" + destination_host + ":" + destination_port + "] "
+				+ mConnectedDeviceName+"\n");
+	}
+
+    // The Handler that gets information back from the BluetoothCommService
+    private final Handler mHandler = new Handler() {
+    	
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+            case MESSAGE_STATE_CHANGE:
+                switch (msg.arg1) {
+                case BluetoothCommService.STATE_CONNECTED:
+                    mBTStatus.setText(R.string.title_connected_to);
+                    mBTStatus.append("\n" + mConnectedDeviceName);
+                    break;
+                case BluetoothCommService.STATE_CONNECTING:
+                	mBTStatus.setText(R.string.title_connecting);
+                    break;
+                //case BluetoothCommService.STATE_LISTEN:
+                case BluetoothCommService.STATE_NONE:
+                	mBTStatus.setText(R.string.title_not_connected);
+                    break;
+                }
+                break;
+            case MESSAGE_WRITE:
+                //byte[] writeBuf = (byte[]) msg.obj;
+                // construct a string from the buffer
+                //String writeMessage = new String(writeBuf);
+                //mBTStatus.setText(writeMessage);
+                break;
+            case MESSAGE_READ:
+            	int raw, data_length, x;
+                byte[] readBuf = (byte[]) msg.obj;
+                data_length = msg.arg1;
+//                for(x=0; x<data_length; x++){
+//                	raw = UByte(readBuf[x]);
+//                	if( raw>MAX_LEVEL ){
+//                		if( raw==DATA_START ){
+//                    		bDataAvailable = true;
+//                    		dataIndex = 0; dataIndex1=0; dataIndex2=0;
+//                    	}
+//                		else if( (raw==DATA_END) || (dataIndex>=MAX_SAMPLES) ){
+//                    		bDataAvailable = false;
+//                    		dataIndex = 0; dataIndex1=0; dataIndex2=0;
+//                    		mWaveform.set_data(ch1_data, ch2_data);                      	
+//                        	if(bReady){ // send "REQ_DATA" again
+//                        		BluetoothOscilloscope.this.sendMessage( new String(new byte[] {REQ_DATA}) );
+//                        	}
+//                        	break;
+//                    	}
+//                	}
+//                	else if( (bDataAvailable) && (dataIndex<(MAX_SAMPLES)) ){ // valid data
+//                		if((dataIndex++)%2==0) ch1_data[dataIndex1++] = raw;	// even data
+//                		else ch2_data[dataIndex2++] = raw;	// odd data
+//                	}
+//                	
+//                }
+                
+                x = frameCount % MAX_SAMPLES;
+                raw = UByte(readBuf[2]);
+                ch1_data[x] = raw;
+                mWaveform.set_data(ch1_data, ch2_data);
+                
+                if((readBuf[1] & 0x01)== 1){
+                	syncFrame = 1;
+                } else {
+                	syncFrame++;
+                }
+
+                switch(syncFrame){
+                case 2:
+                case 15:
+                case 21:
+                case 23:
+                	pulse_rate.setText(""+UByte(readBuf[3]));
+                	break;
+                case 3:
+//                case 9:
+//                case 16:
+//                case 17:
+                	pulse_sat.setText(""+UByte(readBuf[3]));
+                	break;
+                }
+                
+                if(send_udp){
+                	Date date = new Date();
+            		String udpMessage = String.format("%d, %d, %d, %d, %d", UByte(readBuf[0]), UByte(readBuf[1]),
+                    		UByte(readBuf[2]), UByte(readBuf[3]), UByte(readBuf[4]));
+            		SendMessageByUdp("OX, " + frameCount + ", " + date.getTime() + ", " + udpMessage + "\n");
+                }
+                frameCount++;
+                
+                break;
+            case MESSAGE_DEVICE_NAME:
+                // save the connected device's name
+                mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
+                Toast.makeText(getApplicationContext(), "Connected to "
+                               + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+                break;
+            case MESSAGE_TOAST:
+                Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
+                               Toast.LENGTH_SHORT).show();
+                break;
+            }
+        }
+        private int UByte(byte b){
+        	if(b<0) // if negative
+        		return (int)( (b&0x7F) + 128 );
+        	else
+        		return (int)b;
+        }
+    };
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+        case REQUEST_CONNECT_DEVICE:
+            // When DeviceListActivity returns with a device to connect
+            if (resultCode == Activity.RESULT_OK) {
+                // Get the device MAC address
+                String address = data.getExtras()
+                                     .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+                // Get the BLuetoothDevice object
+                BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+                // Attempt to connect to the device
+                mRfcommClient.connect(device);
+            }
+            break;
+        case REQUEST_ENABLE_BT:
+            // When the request to enable Bluetooth returns
+            if (resultCode == Activity.RESULT_OK) {
+                // Bluetooth is now enabled, so set up the oscilloscope
+            	setupOscilloscope();
+            } else {
+                // User did not enable Bluetooth or an error occured
+                Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+    	MenuInflater inflater = getMenuInflater();
+    	inflater.inflate(R.menu.mainmenu, menu);
+    	return true;
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+    	if (item.getItemId() == R.id.settings){
+    		Intent intent = new Intent().setClass(this, MenuSettingsActivity.class);
+    		this.startActivityForResult(intent, 0);
+    	}
+    	return true;
+    }
+
+
+}

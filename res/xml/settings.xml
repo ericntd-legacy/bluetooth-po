@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+  android:key="@+id/bposettings"
+  android:title="Bluetooth Pulse Oximeter Settings"
+  android:summary="Set bluetooth pulse oximeter preferences">
+  <PreferenceCategory
+  	xmlns:android="http://schemas.android.com/apk/res/android"
+  	android:key="@+id/doctor_contact_pref"
+  	android:title="Doctor's Contact Preference"
+  	android:summary="Doctor's Contact Preference">
+  	<EditTextPreference
+  		android:key="phone_num"
+  		android:title="Doctor Phone Number"
+  		android:summary="Set phone number"
+  		android:dialogTitle="Doctor Phone Number"/>
+  </PreferenceCategory>  
+  <PreferenceCategory
+  	xmlns:android="http://schemas.android.com/apk/res/android"
+  	android:key="@+id/udp_streaming_pref"
+  	android:title="UDP Streaming"
+  	android:summary="Set UDP streaming preferences">
+  	<EditTextPreference
+  		android:key="destination_host"
+  		android:title="Destination Host"
+  		android:summary="Set destination host/ip"
+  		android:dialogTitle="Destination Host"/>
+  	<EditTextPreference
+  		android:key="destination_port"
+  		android:title="Destination Port"
+  		android:summary="Set destination port"
+  		android:dialogTitle="Destination Port"/>
+  	<CheckBoxPreference
+  		android:key="enable_udp_stream"
+  		android:title="Enable UDP Stream"
+  		android:summary="Send data to remote host as UDP stream"/>
+  </PreferenceCategory>
+  <PreferenceCategory
+  	xmlns:android="http://schemas.android.com/apk/res/android"
+  	android:key="@+id/input_source_pref"
+  	android:title="Input Data Source"
+  	android:summary="Set input data source">
+  	<ListPreference
+  		android:key="selected_input_source"
+  		android:title="Input Source Options"
+  		android:summary="Select input source"
+  		android:entries="@array/input_source_options"
+  		android:entryValues="@array/input_source_options_values"
+  		android:dialogTitle="Select Input Source"
+  		android:defaultValue="1"/>
+  	<CheckBoxPreference
+  		android:key="enable_sms_listener"
+  		android:title="Enable SMS Listener Service"
+  		android:summary="Enable SMS Listener Service"/>  	
+  </PreferenceCategory>
+  <PreferenceCategory
+  	xmlns:android="http://schemas.android.com/apk/res/android"
+  	android:key="@+id/output_data_pref"
+  	android:title="Output Data Format"
+  	android:summary="Set output data format">
+  	<ListPreference
+  		android:key="selected_output_format"
+  		android:title="Output Data Format Options"
+  		android:summary="Select output data format"
+  		android:entries="@array/output_data_format_options"
+  		android:entryValues="@array/output_data_format_options_values"
+  		android:dialogTitle="Select Output Data Format"
+  		android:defaultValue="0"/>  	
+  </PreferenceCategory>
+  <PreferenceCategory
+  	xmlns:android="http://schemas.android.com/apk/res/android"
+  	android:key="@+id/debug_pref"
+  	android:title="Debug Logging"
+  	android:summary="Toggle debug logging">
+  	<CheckBoxPreference
+  		android:key="enable_debuging"
+  		android:title="Enable Debuging Logs"
+  		android:summary="Enable debug logging"/>  	
+  </PreferenceCategory>
+</PreferenceScreen>

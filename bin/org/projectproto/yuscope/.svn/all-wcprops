@@ -1,0 +1,203 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope
+END
+WaveformPlotThread.class
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/WaveformPlotThread.class
+END
+BluetoothCommService$AcceptThread.class
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothCommService$AcceptThread.class
+END
+BluetoothRfcommClient$ConnectThread.class
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothRfcommClient$ConnectThread.class
+END
+BluetoothCommService$ConnectedThread.class
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothCommService$ConnectedThread.class
+END
+WaveformView.class
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/WaveformView.class
+END
+R$id.class
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$id.class
+END
+BluetoothOscilloscope.class
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothOscilloscope.class
+END
+R$xml.class
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$xml.class
+END
+R$string.class
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$string.class
+END
+DeviceListActivity$1.class
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/DeviceListActivity$1.class
+END
+DeviceListActivity$2.class
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/DeviceListActivity$2.class
+END
+DeviceListActivity$3.class
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/DeviceListActivity$3.class
+END
+R$array.class
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$array.class
+END
+R$drawable.class
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$drawable.class
+END
+BluetoothCommService$ConnectThread.class
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothCommService$ConnectThread.class
+END
+BluetoothRfcommClient.class
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothRfcommClient.class
+END
+BluetoothOscilloscope$1.class
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothOscilloscope$1.class
+END
+BluetoothOscilloscope$2.class
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothOscilloscope$2.class
+END
+BluetoothOscilloscope$3.class
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothOscilloscope$3.class
+END
+BluetoothOscilloscope$4.class
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothOscilloscope$4.class
+END
+BluetoothOscilloscope$5.class
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothOscilloscope$5.class
+END
+BluetoothOscilloscope$6.class
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothOscilloscope$6.class
+END
+DbAdapter$DatabaseHelper.class
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/DbAdapter$DatabaseHelper.class
+END
+DbAdapter.class
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/DbAdapter.class
+END
+BluetoothRfcommClient$ConnectedThread.class
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothRfcommClient$ConnectedThread.class
+END
+R$menu.class
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$menu.class
+END
+R$attr.class
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$attr.class
+END
+R.class
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R.class
+END
+MenuSettingsActivity.class
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/MenuSettingsActivity.class
+END
+BluetoothCommService.class
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/BluetoothCommService.class
+END
+R$layout.class
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$layout.class
+END
+R$color.class
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/R$color.class
+END
+DeviceListActivity.class
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/repos/!svn/ver/19/sandbox/BluetoothPulse/trunk/bin/org/projectproto/yuscope/DeviceListActivity.class
+END

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/linearLayout1"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.27"
+            android:text="Patient would like to send heart rate. Are you ready?"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <Button
+            android:id="@+id/btnok"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="btnOkclick"
+            android:text="Ok" />
+
+        <Button
+            android:id="@+id/btncancel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="btnonCancel"
+            android:text="Not Now" />
+
+    </LinearLayout>
