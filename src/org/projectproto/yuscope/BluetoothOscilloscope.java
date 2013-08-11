@@ -197,12 +197,12 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
         		//return;
         	}
         }
-        // Prevent phone from sleeping
+        // Prevent phone from sleeping - might require the DEVICE_POWER permisson which doesn't work with Android 4.0+
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         this.mWakeLock = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "My Tag"); 
         this.mWakeLock.acquire();
         
-        // Start SMS Listener Service
+        // Start SMS Listener Service - what does it do?
         if (bposettings.getBoolean("enable_sms_listener", true)){
         	Intent smsListener = new Intent(getApplicationContext(), ListenSms.class);        
         	startService(smsListener);
@@ -323,6 +323,7 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
         
     }
     
+    //Settings are stored in the application's shared preferences
     private void RefreshSettings() {
     	if (!bposettings.contains("enable_udp_stream")){
         	Log.v("setupOscilloscope", "PREF_FILE does not contain 'enable_udp_stream' key");
@@ -745,6 +746,7 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
     	return true;
     }
     
+    //getting messages from where?
     private BroadcastReceiver smsReceiver = new BroadcastReceiver() {
 		
     	@Override
