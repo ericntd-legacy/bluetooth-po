@@ -3,6 +3,7 @@ package org.projectproto.yuscope;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 import org.projectproto.yuscope.BluetoothCommService;
@@ -298,9 +299,14 @@ public class BluetoothCommService {
             // Get a BluetoothSocket for a connection with the
             // given BluetoothDevice
             try {
-                tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
-            } catch (IOException e) {
-                Log.e(TAG, "create() failed", e);
+                //tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
+            	Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
+                tmp = (BluetoothSocket) m.invoke(device, 1);
+            } //catch (IOException e) {
+                //Log.e(TAG, "create() failed", e);
+            //}
+        catch (Exception e2) {
+            	Log.e(TAG, "some other exception", e2);
             }
             mmSocket = tmp;
         }
@@ -329,6 +335,8 @@ public class BluetoothCommService {
                 // Start the service over to restart listening mode
                 BluetoothCommService.this.start();
                 return;
+            } catch (Exception e2) {
+            	Log.e(TAG, "some other exception", e2);
             }
 
             // Reset the ConnectThread because we're done
@@ -378,38 +386,52 @@ public class BluetoothCommService {
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
-            //byte[] buffer = new byte[1024];
-            int bufSize = 5;
+            //byte[] buffer = new byte[22];
+            int bufSize = 5;//why 5 - frame size but why frame size?
             byte[] buffer = new byte[bufSize];
-            int[] intBuf = new int[bufSize];
-            int bytes;
-
-            // Keep listening to the InputStream while connected
+            //int[] intBuf = new int[bufSize];
+            
+            //Number of bytes read into the buffer return by mmInStream.read()
+            int bytesReceived = 0;
+            
+            /*try {
+            	bytesReceived = mmInStream.read(buffer);
+            } catch (IOException e) {
+            	Log.e(TAG, "something went wrong, couldn't read byte at all", e);
+            }*/
+            // Keep listening to the InputStream while connected - Do I need to introduce a new thread here?
             while (true) {
                 try {
                     // Read from the InputStream
-                    bytes = mmInStream.read(buffer);
+                	bytesReceived = mmInStream.read(buffer);//-1 if end of stream or number of bytes read (could be 0)
 //                	bytes = mmInStream.read(buffer,0,bufSize);
 //                	for(int i=0; i<buffer.length; i++ ){
 //                		intBuf[i] = buffer[i];
 //                	}
                     // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
-                    Thread.currentThread();
+                	if (bytesReceived>-1) {
+                		mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_READ, bytesReceived, -1, buffer).sendToTarget();
+                	}
+                    //Thread.currentThread();//What is it for?
 					// mHandler.obtainMessage(BluePulse.MESSAGE_READ, bytes, -1, intBuf).sendToTarget();
                     //Thread.sleep(13);
                     // Sleep duration for android version less than 4.0
                     //Thread.sleep(12);
                     // Sleep duration for android version greater than 4.0
-                    Thread.sleep(15);
+                    //Thread.sleep(15);
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();
+                    // Start the service over to restart listening mode
+                    BluetoothCommService.this.start();
                     break;
-                } catch (InterruptedException e) {
+                 
+                /*} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					// e.printStackTrace();
-                	Log.e(TAG, "sleeping", e);
+                	Log.e(TAG, "sleeping", e);*/
+				} catch (Exception e) {
+					Log.e(TAG, "some weird exception thrown", e);
 				}
             }
         }

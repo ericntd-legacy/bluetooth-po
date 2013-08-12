@@ -126,7 +126,7 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		plot_thread.setRunning(true);
 	}
 	
-	public void PlotPoints(Canvas canvas){
+	public void PlotPoints(Canvas canvas){//obviously canvas would be null here!
 		
 		// clear screen
 		canvas.drawColor(Color.rgb(20, 20, 20));

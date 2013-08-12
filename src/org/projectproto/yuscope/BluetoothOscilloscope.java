@@ -132,13 +132,16 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	static byte timebase_index = 5;
 	static byte ch1_index = 6, ch2_index = 6;
 	static byte ch1_pos = 0, ch2_pos = 0;	// 0 to 60
+	//What are ch1_data and ch2_data?
 	private int[] ch1_data = new int[MAX_SAMPLES];
 	private int[] ch2_data = new int[MAX_SAMPLES];	
 	
 	private int dataIndex=0, dataIndex1=0, dataIndex2=0;
 	private boolean bDataAvailable=false;
 	
+	//What is frameCount?
 	private int frameCount = 0;
+	//What is syncFrame?
 	private int syncFrame = 0;
 	
 	private CheckBox chkboxEnableUDP;
@@ -153,6 +156,7 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	private boolean send_udp = false;
 	private DatagramSocket datagramSocket;
 	
+	//Main measurements variables: heart-rate and oxygen saturation range
 	private int HR = 0;
 	private int SPO2 = 0;
 	
@@ -185,13 +189,19 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
+        
+        //----------
+        //Default input source to Bluetooth
+        bposettingseditor.putString("selected_input_source", String.valueOf(PREF_INPUT_SRC_BLUETOOTH));
+    	bposettingseditor.commit();
+        //----------
+        Log.i(TAG, "the chosen input source is "+Integer.parseInt(bposettings.getString("selected_input_source", "1")));
         // If the adapter is null, then Bluetooth is not supported
         if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
         	if (mBluetoothAdapter == null) {
         		Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
         		//bposettingseditor.putString("selected_input_source", "1");
-        		bposettingseditor.putString("selected_input_source", "0");
+        		bposettingseditor.putString("selected_input_source", String.valueOf(PREF_INPUT_SRC_BLUETOOTH));//why do we need to update the shared preference to the same value (0) here? 
             	bposettingseditor.commit();
         		//finish();
         		//return;
@@ -399,6 +409,7 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 		});
 		mConnectButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View arg0) {
+				Log.d(TAG, "Connect BT button is clicked");
 				BTConnect();
 			}
 		});
@@ -540,10 +551,12 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
     }
     
     private void BTConnect(){
-    	if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
+    	//Once in here, it's already trying to establish Bluetooth connection, so why the if?
+    	//if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
+    		Log.d(TAG, "opening deviceactivity");
     		Intent serverIntent = new Intent(this, DeviceListActivity.class);
     		startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
-    	}
+    	//}
     }
     
     private int toScreenPos(byte position){
@@ -610,84 +623,90 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-            case MESSAGE_STATE_CHANGE:
-                switch (msg.arg1) {
-                case BluetoothCommService.STATE_CONNECTED:
-                    mBTStatus.setText(R.string.title_connected_to);
-                    mBTStatus.append("\n" + mConnectedDeviceName);
-                    break;
-                case BluetoothCommService.STATE_CONNECTING:
-                	mBTStatus.setText(R.string.title_connecting);
-                    break;
-                case BluetoothCommService.STATE_NONE:
-                	mBTStatus.setText(R.string.title_not_connected);
-                    break;
-                }
-                break;
-            case MESSAGE_WRITE:
-                break;
-            case MESSAGE_READ:
-            	int raw, data_length, x;
-                byte[] readBuf = (byte[]) msg.obj;
-                data_length = msg.arg1;
-                
-                x = frameCount % MAX_SAMPLES;
-                raw = UByte(readBuf[2]);
-                ch1_data[x] = raw;
-                mWaveform.set_data(ch1_data, ch2_data);
-                
-                if((readBuf[1] & 0x01)== 1){
-                	syncFrame = 1;
-                } else {
-                	syncFrame++;
-                }
-
-                switch(syncFrame){
-                case 2:
-                case 15:
-                case 21:
-                case 23:
-                	pulse_rate.setText(""+UByte(readBuf[3]));
-                	HR = UByte(readBuf[3]);
-                	break;
-                case 3:
-//                case 9:
-//                case 16:
-//                case 17:
-                	pulse_sat.setText(""+UByte(readBuf[3]));
-                	SPO2 = UByte(readBuf[3]);
-                	break;
-                }
-                
-                if(send_udp){
-                	switch(Integer.parseInt(bposettings.getString("selected_output_format", "0"))){
-                	case PREF_OUTPUT_TXT:
-                		Date date = new Date();
-                		//String udpMessage = String.format("%d, %d, %d, %d, %d", UByte(readBuf[0]), UByte(readBuf[1]),
-                		//		UByte(readBuf[2]), UByte(readBuf[3]), UByte(readBuf[4]));
-                		String udpMessage = String.format("%d, %d, %d", UByte(readBuf[2]), HR, SPO2);
-                		SendMessageByUdp("OX, " + frameCount + ", " + date.getTime() + ", " + udpMessage + "\n");
-                		break;
-                	case PREF_OUTPUT_RAW:
-                		SendBytesByUdp(readBuf);
-                		break;
-                	}
-                }
-                frameCount++;
-                
-                break;
-            case MESSAGE_DEVICE_NAME:
-                // save the connected device's name
-                mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-                Toast.makeText(getApplicationContext(), "Connected to "
-                               + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
-                break;
-            case MESSAGE_TOAST:
-                Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
-                               Toast.LENGTH_SHORT).show();
-                break;
+	            case MESSAGE_STATE_CHANGE:
+	                switch (msg.arg1) {
+	                case BluetoothCommService.STATE_CONNECTED:
+	                    mBTStatus.setText(R.string.title_connected_to);
+	                    mBTStatus.append("\n" + mConnectedDeviceName);
+	                    break;
+	                case BluetoothCommService.STATE_CONNECTING:
+	                	mBTStatus.setText(R.string.title_connecting);
+	                    break;
+	                case BluetoothCommService.STATE_NONE:
+	                	mBTStatus.setText(R.string.title_not_connected);
+	                    break;
+	                }
+	                break;
+	            case MESSAGE_WRITE:
+	                break;
+	            case MESSAGE_READ:
+	            	int raw, data_length, x;//what is x?
+	                byte[] readBuf = (byte[]) msg.obj;
+	                data_length = msg.arg1;
+	                
+	                x = frameCount % MAX_SAMPLES;//framecount is 0 isn't it?
+	                raw = UByte(readBuf[2]);//This is the frame's 3rd byte containing the waveform data
+	                ch1_data[x] = raw;
+	                mWaveform.set_data(ch1_data, ch2_data);
+	                
+	                //what is it syncFrame?
+	                if((readBuf[1] & 0x01)== 1){
+	                	syncFrame = 1;
+	                } else {
+	                	syncFrame++;
+	                }
+	                
+	                //both HR and SPO2 are stored in the 4th byte which is readBuf[3]
+	                switch(syncFrame){
+	                	//reading the information on certain frames
+		                case 2:
+		                case 15:
+		                case 21:
+		                case 23:
+		                	pulse_rate.setText(""+UByte(readBuf[3]));
+		                	HR = UByte(readBuf[3]);
+		                	break;
+		                case 3:
+		//                case 9:
+		//                case 16:
+		//                case 17:
+		                	pulse_sat.setText(""+UByte(readBuf[3]));
+		                	SPO2 = UByte(readBuf[3]);
+		                	break;
+	                }
+	                Log.d(TAG, "pulse rate is "+HR+" oxigen saturation is "+SPO2);
+	                
+	                if(send_udp){
+	                	switch(Integer.parseInt(bposettings.getString("selected_output_format", "0"))){
+	                	case PREF_OUTPUT_TXT:
+	                		Date date = new Date();
+	                		//String udpMessage = String.format("%d, %d, %d, %d, %d", UByte(readBuf[0]), UByte(readBuf[1]),
+	                		//		UByte(readBuf[2]), UByte(readBuf[3]), UByte(readBuf[4]));
+	                		String udpMessage = String.format("%d, %d, %d", UByte(readBuf[2]), HR, SPO2);
+	                		SendMessageByUdp("OX, " + frameCount + ", " + date.getTime() + ", " + udpMessage + "\n");
+	                		break;
+	                	case PREF_OUTPUT_RAW:
+	                		SendBytesByUdp(readBuf);
+	                		break;
+	                	}
+	                }
+	                frameCount++;
+	                
+	                break;
+	            case MESSAGE_DEVICE_NAME:
+	                // save the connected device's name
+	                mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
+	                Toast.makeText(getApplicationContext(), "Connected to "
+	                               + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+	                break;
+	            case MESSAGE_TOAST:
+	                Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
+	                               Toast.LENGTH_SHORT).show();
+	                break;
             }
+            Log.d(TAG, " framecount is "+frameCount);
         }
+        //converting byte to integer?
         private int UByte(byte b){
         	if(b<0) // if negative
         		return (int)( (b&0x7F) + 128 );
@@ -697,33 +716,35 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
     };
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    	Log.i(TAG, "request code was "+requestCode+" and result code was "+resultCode);
         switch (requestCode) {
-        case REQUEST_CONNECT_DEVICE:
-        	if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
-        		// When DeviceListActivity returns with a device to connect
-        		if (resultCode == Activity.RESULT_OK) {//1 device is discovered - pair or not pair?
-        			// Get the device MAC address
-        			String address = data.getExtras()
-        			.getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
-        			// Get the BLuetoothDevice object
-        			BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-        			// Attempt to connect to the device
-        			mRfcommClient.connect(device);
-        		}
-        	}
-            break;
-        case REQUEST_ENABLE_BT:
-        	if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
-        		// When the request to enable Bluetooth returns
-        		if (resultCode == Activity.RESULT_OK) {
-        			// Bluetooth is now enabled, so set up the oscilloscope
-        			setupOscilloscope();
-        		} else {
-        			// User did not enable Bluetooth or an error occured
-        			Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
-        			finish();
-        		}
-        	}
+	        case REQUEST_CONNECT_DEVICE:
+	        	//Again, there is no point having the following if because it is handling Bluetooth connection here
+	        	//if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
+	        		// When DeviceListActivity returns with a device to connect
+	        		if (resultCode == Activity.RESULT_OK) {//1 device is discovered - pair or not pair?
+	        			// Get the device MAC address
+	        			String address = data.getExtras()
+	        			.getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+	        			// Get the BLuetoothDevice object
+	        			BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+	        			// Attempt to connect to the device
+	        			mRfcommClient.connect(device);
+	        		}
+	        	//}
+	            break;
+	        case REQUEST_ENABLE_BT:
+	        	//if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
+	        		// When the request to enable Bluetooth returns
+	        		if (resultCode == Activity.RESULT_OK) {
+	        			// Bluetooth is now enabled, so set up the oscilloscope
+	        			setupOscilloscope();
+	        		} else {
+	        			// User did not enable Bluetooth or an error occured
+	        			Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
+	        			finish();
+	        		}
+	        	//}
         }
     }
     
