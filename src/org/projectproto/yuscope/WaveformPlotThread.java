@@ -9,9 +9,14 @@
 package org.projectproto.yuscope;
 
 import android.graphics.Canvas;
+import android.util.Log;
 import android.view.SurfaceHolder;
 
 public class WaveformPlotThread extends Thread {
+	//Debugging
+	private final String TAG = "WaveformPlotThread";
+	private final boolean D = true;
+	
 	private SurfaceHolder holder;
 	private WaveformView plot_area;
 	private boolean _run = false;
@@ -34,7 +39,9 @@ public class WaveformPlotThread extends Thread {
 				synchronized (holder) {
 					plot_area.PlotPoints(c);
 				}
-			}finally{
+			} catch (Exception e) {
+				if (D) Log.d(TAG, "exception occur", e);
+			} finally {
 				if(c!=null){
 					holder.unlockCanvasAndPost(c);
 				}

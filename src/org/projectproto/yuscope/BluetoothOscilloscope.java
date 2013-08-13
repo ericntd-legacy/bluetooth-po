@@ -141,8 +141,8 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	
 	//What is frameCount?
 	private int frameCount = 0;
-	//What is syncFrame?
-	private int syncFrame = 0;
+	//What is frameInPacket?
+	private int frameInPacket = 0;
 	
 	private CheckBox chkboxEnableUDP;
 	private Button buttonTestUDP;
@@ -640,29 +640,40 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	            case MESSAGE_WRITE:
 	                break;
 	            case MESSAGE_READ:
-	            	int raw, data_length, x;//what is x?
+	            	int raw, data_length, x;//what is x? the iterator for the array of data for the waveformview
 	                byte[] readBuf = (byte[]) msg.obj;
 	                data_length = msg.arg1;
 	                
 	                x = frameCount % MAX_SAMPLES;//framecount is 0 isn't it?
-	                raw = UByte(readBuf[2]);//This is the frame's 3rd byte containing the waveform data
+	                raw = UByte(readBuf[2]);//This is the frame's 3rd byte containing the waveform data - is it for HR or SPO2 or both somehow?
 	                ch1_data[x] = raw;
 	                mWaveform.set_data(ch1_data, ch2_data);
 	                
-	                //what is it syncFrame?
-	                if((readBuf[1] & 0x01)== 1){
-	                	syncFrame = 1;
-	                } else {
-	                	syncFrame++;
+	                //readBuf[1] is the status byte (Data format #2) which has the first bit as the SYNC bit
+	                //Since last bit, bit 7 always set, the status byte for the Frame Sync is sth like 1??? ???1
+	                //Using "bit masking" to check the first bit/ SYNC bit
+	                //String s1 = String.format("%8s", Integer.toBinaryString(readBuf[1] & 0xFF)).replace(' ', '0');
+	                Log.d(TAG, "status is "+readBuf[1]+ " " +(readBuf[1] & 0x01)+" frameInPacket is "+frameInPacket);
+	                if ((readBuf[1] & 0x01)== 1) {//status byte - shouldn't it be -127 (129) instead?
+	                	frameInPacket = 1;//Frame Sync
+	                } else if (frameInPacket>0&&frameInPacket<25) {//if Frame Sync is not found first, frameInPacket should not be increased
+	                	frameInPacket++;
+	                } else if (frameInPacket==25) {
+	                	frameInPacket = 0;
 	                }
 	                
 	                //both HR and SPO2 are stored in the 4th byte which is readBuf[3]
-	                switch(syncFrame){
+	                switch(frameInPacket){
 	                	//reading the information on certain frames
-		                case 2:
-		                case 15:
-		                case 21:
+	                	/*case 1:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR MSB " + readBuf[3]);break;}
+	                	case 2:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR LSB " + readBuf[3]);break;}
+		                case 14:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR MSB " + readBuf[3]);break;}
+		                case 15:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR LSB " + readBuf[3]);break;}
+		                case 20:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR-D MSB " + readBuf[3]);break;}
+		                case 21:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR-D LSB " + readBuf[3]);break;}
+		                case 22:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR-D MSB " + readBuf[3]);break;}*/
 		                case 23:
+		                	//if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR-D LSB " + readBuf[3]);}
 		                	pulse_rate.setText(""+UByte(readBuf[3]));
 		                	HR = UByte(readBuf[3]);
 		                	break;
@@ -674,7 +685,7 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 		                	SPO2 = UByte(readBuf[3]);
 		                	break;
 	                }
-	                Log.d(TAG, "pulse rate is "+HR+" oxigen saturation is "+SPO2);
+	                Log.d(TAG, frameCount+") pulse rate is "+HR+" oxigen saturation is "+SPO2);
 	                
 	                if(send_udp){
 	                	switch(Integer.parseInt(bposettings.getString("selected_output_format", "0"))){
