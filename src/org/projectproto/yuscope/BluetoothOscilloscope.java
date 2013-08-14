@@ -64,8 +64,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 public class BluetoothOscilloscope extends Activity implements  Button.OnClickListener{
-	// Logging
+	//Debugging
 	private static final String TAG = "BluetoothPulseOximeter";
+	private static final boolean D = true;
 	
 	// Run/Pause status
     private boolean bReady = false;
@@ -139,10 +140,11 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	private int dataIndex=0, dataIndex1=0, dataIndex2=0;
 	private boolean bDataAvailable=false;
 	
-	//What is frameCount?
+	//Tracking frames and packets received
 	private int frameCount = 0;
 	//What is frameInPacket?
 	private int frameInPacket = 0;
+	private int packetCount = 0;
 	
 	private CheckBox chkboxEnableUDP;
 	private Button buttonTestUDP;
@@ -159,6 +161,8 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	//Main measurements variables: heart-rate and oxygen saturation range
 	private int HR = 0;
 	private int SPO2 = 0;
+	private int MIN_HR = 18;//according to NONIN documentation - minimum pulse rate
+	private int MAX_HR = 127;//according to data format #2's byte 4 range 
 	
 	SharedPreferences bposettings = null;
 	SharedPreferences.Editor bposettingseditor = null;
@@ -304,6 +308,7 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
         	}
         }
         frameCount = 0;
+        packetCount = 0;
         RefreshSettings();
         registerReceiver(smsReceiver, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
     }
@@ -323,6 +328,7 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 //        mWaveform = (WaveformView)findViewById(R.id.WaveformArea);
         
         frameCount = 0;
+        packetCount = 0;
         
         for(int i=0; i<MAX_SAMPLES; i++){
         	ch1_data[i] = 0;
@@ -653,30 +659,58 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	                //Since last bit, bit 7 always set, the status byte for the Frame Sync is sth like 1??? ???1
 	                //Using "bit masking" to check the first bit/ SYNC bit
 	                //String s1 = String.format("%8s", Integer.toBinaryString(readBuf[1] & 0xFF)).replace(' ', '0');
-	                Log.d(TAG, "status is "+readBuf[1]+ " " +(readBuf[1] & 0x01)+" frameInPacket is "+frameInPacket);
+	                
+	                if (D) Log.d(TAG, "Packet No."+packetCount+" - frame No."+frameInPacket+ " - status is "+readBuf[1]+ " - " +(readBuf[1] & 0x01) + " - " + UByte(readBuf[1]));
 	                if ((readBuf[1] & 0x01)== 1) {//status byte - shouldn't it be -127 (129) instead?
+	                	if (D) Log.d(TAG, "Frame Sync encountered!");
 	                	frameInPacket = 1;//Frame Sync
+	                	packetCount++;//tracking packets based on Frame Sync instead of frameCount/25 since there might be  frames lost during transmission
 	                } else if (frameInPacket>0&&frameInPacket<25) {//if Frame Sync is not found first, frameInPacket should not be increased
 	                	frameInPacket++;
 	                } else if (frameInPacket==25) {
+	                	//reset frameInPacket at the end of the packet
 	                	frameInPacket = 0;
 	                }
 	                
+	                //if (D) Log.i(TAG, "Packet No."+packetCount+" frame No."+frameInPacket); 
 	                //both HR and SPO2 are stored in the 4th byte which is readBuf[3]
-	                switch(frameInPacket){
+	                byte b = readBuf[3];
+                	//String bString = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
+                	String bString = String.format("%8s", Integer.toBinaryString(b)).replace(' ', '0');
+                	
+	                if (((readBuf[3] & 0x20)== 64)||true)switch(frameInPacket){
+	                	
 	                	//reading the information on certain frames
-	                	/*case 1:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR MSB " + readBuf[3]);break;}
-	                	case 2:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR LSB " + readBuf[3]);break;}
-		                case 14:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR MSB " + readBuf[3]);break;}
-		                case 15:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR LSB " + readBuf[3]);break;}
-		                case 20:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR-D MSB " + readBuf[3]);break;}
-		                case 21:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR-D LSB " + readBuf[3]);break;}
-		                case 22:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR-D MSB " + readBuf[3]);break;}*/
-		                case 23:
-		                	//if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR-D LSB " + readBuf[3]);}
-		                	pulse_rate.setText(""+UByte(readBuf[3]));
+	                	//case 1:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR MSB " + readBuf[3]);break;}
+	                	//case 2:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR LSB " + readBuf[3]);break;}
+		                //case 14:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR MSB " + readBuf[3]);break;}
+		                //case 15:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR LSB " + readBuf[3]);break;}
+		                case 20://if (MIN_HR<=UByte(readBuf[3])&&UByte(readBuf[3])<=MAX_HR) {
+		                	
+		                	if (D) Log.i(TAG, frameCount + ") HR-D MSB "+ UByte(readBuf[3]) + " before conversion " + readBuf[3]+ " - third byte "+ bString);
+		                	pulse_rate.setText(""+UByte(readBuf[3])+" "+readBuf[3]);
 		                	HR = UByte(readBuf[3]);
 		                	break;
+		                //}
+		                case 21: //if (MIN_HR<=UByte(readBuf[3])&&UByte(readBuf[3])<=MAX_HR) {
+		                	if (D) Log.i(TAG, frameCount+") HR-D LSB "+ UByte(readBuf[3]) + " before conversion " + readBuf[3]+ " - third byte "+ bString);
+		                	pulse_rate.setText(""+UByte(readBuf[3])+" "+readBuf[3]);
+		                	HR = UByte(readBuf[3]);
+		                	break;
+		                //}
+		                case 22://if (MIN_HR<=UByte(readBuf[3])&&UByte(readBuf[3])<=MAX_HR) {
+		                	if (D) Log.i(TAG, frameCount+") E-HR-D MSB "+ UByte(readBuf[3]) + " before conversion " + readBuf[3]+ " - third byte "+ bString);
+		                	pulse_rate.setText(""+UByte(readBuf[3])+" "+readBuf[3]);
+		                	HR = UByte(readBuf[3]);
+		                	break;
+		                //}
+		                case 23://if (MIN_HR<=UByte(readBuf[3])&&UByte(readBuf[3])<=MAX_HR) {
+		                	//if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR-D LSB " + readBuf[3]);}
+		                	if (D) Log.i(TAG, frameCount+") E-HR-D LSB "+ UByte(readBuf[3]) + " before conversion " + readBuf[3]+ " - third byte "+ bString);
+		                	pulse_rate.setText(""+UByte(readBuf[3])+" "+readBuf[3]);
+		                	HR = UByte(readBuf[3]);
+		                	break;
+		                //}
 		                case 3:
 		//                case 9:
 		//                case 16:
@@ -685,7 +719,7 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 		                	SPO2 = UByte(readBuf[3]);
 		                	break;
 	                }
-	                Log.d(TAG, frameCount+") pulse rate is "+HR+" oxigen saturation is "+SPO2);
+	                //if (D) Log.d(TAG, frameCount+") - packetpulse rate is "+HR+" oxigen saturation is "+SPO2);
 	                
 	                if(send_udp){
 	                	switch(Integer.parseInt(bposettings.getString("selected_output_format", "0"))){
@@ -715,9 +749,10 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	                               Toast.LENGTH_SHORT).show();
 	                break;
             }
-            Log.d(TAG, " framecount is "+frameCount);
+            //Log.d(TAG, " framecount is "+frameCount);
         }
         //converting byte to integer?
+        //this might work for status but definitely not HR!!! - HR is always between 0 and 127
         private int UByte(byte b){
         	if(b<0) // if negative
         		return (int)( (b&0x7F) + 128 );
