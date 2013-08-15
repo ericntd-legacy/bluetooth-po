@@ -162,7 +162,27 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	private int HR = 0;
 	private int SPO2 = 0;
 	private int MIN_HR = 18;//according to NONIN documentation - minimum pulse rate
-	private int MAX_HR = 127;//according to data format #2's byte 4 range 
+	private int MAX_HR = 127;//according to data format #2's byte 4 range
+	private int HR_MSB = 0;
+	private int HR_LSB = 0;
+	private int E_HR_MSB = 0;
+	private int E_HR_LSB = 0;
+	private int HRD_MSB = 0;
+	private int HRD_LSB = 0;
+	private int E_HRD_MSB = 0;
+	private int E_HRD_LSB = 0;
+	private boolean hrMSBReceived = false;
+	private boolean hrLSBReceived = false;
+	private boolean ehrMSBReceived = false;
+	private boolean ehrLSBReceived = false;
+	private boolean hrdMSBReceived = false;
+	private boolean hrdLSBReceived = false;
+	private boolean ehrdMSBReceived = false;
+	private boolean ehrdLSBReceived = false;
+	
+	//Special information comes with every packet or 3 times a second
+	private boolean SPA = false;
+	private boolean lowBat = false;
 	
 	SharedPreferences bposettings = null;
 	SharedPreferences.Editor bposettingseditor = null;
@@ -655,87 +675,8 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
 	                ch1_data[x] = raw;
 	                mWaveform.set_data(ch1_data, ch2_data);
 	                
-	                //readBuf[1] is the status byte (Data format #2) which has the first bit as the SYNC bit
-	                //Since last bit, bit 7 always set, the status byte for the Frame Sync is sth like 1??? ???1
-	                //Using "bit masking" to check the first bit/ SYNC bit
-	                //String s1 = String.format("%8s", Integer.toBinaryString(readBuf[1] & 0xFF)).replace(' ', '0');
-	                
-	                if (D) Log.d(TAG, "Packet No."+packetCount+" - frame No."+frameInPacket+ " - status is "+readBuf[1]+ " - " +(readBuf[1] & 0x01) + " - " + UByte(readBuf[1]));
-	                if ((readBuf[1] & 0x01)== 1) {//status byte - shouldn't it be -127 (129) instead?
-	                	if (D) Log.d(TAG, "Frame Sync encountered!");
-	                	frameInPacket = 1;//Frame Sync
-	                	packetCount++;//tracking packets based on Frame Sync instead of frameCount/25 since there might be  frames lost during transmission
-	                } else if (frameInPacket>0&&frameInPacket<25) {//if Frame Sync is not found first, frameInPacket should not be increased
-	                	frameInPacket++;
-	                } else if (frameInPacket==25) {
-	                	//reset frameInPacket at the end of the packet
-	                	frameInPacket = 0;
-	                }
-	                
-	                //if (D) Log.i(TAG, "Packet No."+packetCount+" frame No."+frameInPacket); 
-	                //both HR and SPO2 are stored in the 4th byte which is readBuf[3]
-	                byte b = readBuf[3];
-                	//String bString = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
-                	String bString = String.format("%8s", Integer.toBinaryString(b)).replace(' ', '0');
-                	
-	                if (((readBuf[3] & 0x20)== 64)||true)switch(frameInPacket){
-	                	
-	                	//reading the information on certain frames
-	                	//case 1:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR MSB " + readBuf[3]);break;}
-	                	//case 2:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") HR LSB " + readBuf[3]);break;}
-		                //case 14:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR MSB " + readBuf[3]);break;}
-		                //case 15:if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR LSB " + readBuf[3]);break;}
-		                case 20://if (MIN_HR<=UByte(readBuf[3])&&UByte(readBuf[3])<=MAX_HR) {
-		                	
-		                	if (D) Log.i(TAG, frameCount + ") HR-D MSB "+ UByte(readBuf[3]) + " before conversion " + readBuf[3]+ " - third byte "+ bString);
-		                	pulse_rate.setText(""+UByte(readBuf[3])+" "+readBuf[3]);
-		                	HR = UByte(readBuf[3]);
-		                	break;
-		                //}
-		                case 21: //if (MIN_HR<=UByte(readBuf[3])&&UByte(readBuf[3])<=MAX_HR) {
-		                	if (D) Log.i(TAG, frameCount+") HR-D LSB "+ UByte(readBuf[3]) + " before conversion " + readBuf[3]+ " - third byte "+ bString);
-		                	pulse_rate.setText(""+UByte(readBuf[3])+" "+readBuf[3]);
-		                	HR = UByte(readBuf[3]);
-		                	break;
-		                //}
-		                case 22://if (MIN_HR<=UByte(readBuf[3])&&UByte(readBuf[3])<=MAX_HR) {
-		                	if (D) Log.i(TAG, frameCount+") E-HR-D MSB "+ UByte(readBuf[3]) + " before conversion " + readBuf[3]+ " - third byte "+ bString);
-		                	pulse_rate.setText(""+UByte(readBuf[3])+" "+readBuf[3]);
-		                	HR = UByte(readBuf[3]);
-		                	break;
-		                //}
-		                case 23://if (MIN_HR<=UByte(readBuf[3])&&UByte(readBuf[3])<=MAX_HR) {
-		                	//if (18<UByte(readBuf[3])&&UByte(readBuf[3])<321) {Log.i(TAG, frameCount+") E-HR-D LSB " + readBuf[3]);}
-		                	if (D) Log.i(TAG, frameCount+") E-HR-D LSB "+ UByte(readBuf[3]) + " before conversion " + readBuf[3]+ " - third byte "+ bString);
-		                	pulse_rate.setText(""+UByte(readBuf[3])+" "+readBuf[3]);
-		                	HR = UByte(readBuf[3]);
-		                	break;
-		                //}
-		                case 3:
-		//                case 9:
-		//                case 16:
-		//                case 17:
-		                	pulse_sat.setText(""+UByte(readBuf[3]));
-		                	SPO2 = UByte(readBuf[3]);
-		                	break;
-	                }
-	                //if (D) Log.d(TAG, frameCount+") - packetpulse rate is "+HR+" oxigen saturation is "+SPO2);
-	                
-	                if(send_udp){
-	                	switch(Integer.parseInt(bposettings.getString("selected_output_format", "0"))){
-	                	case PREF_OUTPUT_TXT:
-	                		Date date = new Date();
-	                		//String udpMessage = String.format("%d, %d, %d, %d, %d", UByte(readBuf[0]), UByte(readBuf[1]),
-	                		//		UByte(readBuf[2]), UByte(readBuf[3]), UByte(readBuf[4]));
-	                		String udpMessage = String.format("%d, %d, %d", UByte(readBuf[2]), HR, SPO2);
-	                		SendMessageByUdp("OX, " + frameCount + ", " + date.getTime() + ", " + udpMessage + "\n");
-	                		break;
-	                	case PREF_OUTPUT_RAW:
-	                		SendBytesByUdp(readBuf);
-	                		break;
-	                	}
-	                }
-	                frameCount++;
+	                //Retrieve pulse rate and SpO2 and display on top right corner of the app's main screen
+	                getMeasurements(readBuf);
 	                
 	                break;
 	            case MESSAGE_DEVICE_NAME:
@@ -751,15 +692,215 @@ public class BluetoothOscilloscope extends Activity implements  Button.OnClickLi
             }
             //Log.d(TAG, " framecount is "+frameCount);
         }
-        //converting byte to integer?
-        //this might work for status but definitely not HR!!! - HR is always between 0 and 127
-        private int UByte(byte b){
-        	if(b<0) // if negative
-        		return (int)( (b&0x7F) + 128 );
-        	else
-        		return (int)b;
-        }
+        
     };
+    
+    public void getMeasurements(byte[] frame) {
+    	byte statusB = frame[1];
+    	
+    	if ((statusB & 0x01)== 1) {//frame[1] is Byte 2 or the STATUS byte whose bits are like 0??????[SYNC Bit]
+        	if (D) Log.w(TAG, "Frame Sync encountered! Status is "+UByte(statusB)+" - "+ Integer.toBinaryString(statusB));
+        	frameInPacket = 1;//Frame Sync
+        	packetCount++;//tracking packets based on Frame Sync instead of frameCount/25 since there might be  frames lost during transmission
+        } else if (frameInPacket>0&&frameInPacket<25) {//if Frame Sync is not found first, frameInPacket should not be increased
+        	frameInPacket++;
+        } else if (frameInPacket==25) {
+        	//reset frameInPacket at the end of the packet
+        	frameInPacket = 0;
+        }
+        
+        //if (D) Log.i(TAG, "Packet No."+packetCount+" frame No."+frameInPacket); 
+        //both HR and SPO2 are stored in the 4th byte which is frame[3]
+        byte b = frame[3];
+        int integer1 = frame[3];
+    	//String bString = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
+    	String bString = String.format("%8s", Integer.toBinaryString(b)).replace(' ', '0');
+    	String s2 = String.format("%8s", Integer.toBinaryString(integer1)).replace(' ', '0');
+    	
+        switch(frameInPacket){
+        	
+        	//reading the information on certain frames
+        	case 1:
+        		HR_MSB = integer1;
+        		hrMSBReceived = true;
+        		break;
+        	case 2:
+        		HR_LSB = integer1;
+        		hrLSBReceived = true;
+        		break;
+        	case 8:
+        		//Checking this STAT2 frame's Bit 5 for high quality smartpoint measurement and low battery
+        		if ((b&0x20) > 0) SPA = true;
+        		else SPA = false;
+        		if (D) Log.d(TAG, "STAT2 is "+bString);
+        		
+        		if ((b&0x01) > 0) lowBat = true;
+        		break;
+            case 14:
+            	E_HR_MSB = integer1;
+            	ehrMSBReceived = true;
+            	break;
+            case 15:
+            	E_HR_LSB = integer1;
+            	ehrLSBReceived = true;
+            	break;
+            case 20://if (MIN_HR<=UByte(frame[3])&&UByte(frame[3])<=MAX_HR) {
+            	
+            	
+            	//pulse_rate.setText(""+UByte(frame[3])+" "+frame[3]);
+            	//HR = UByte(frame[3]);
+            	HRD_MSB = integer1;
+            	//if (D) Log.i(TAG, frameCount + ") HR-D MSB "+ UByte(frame[3]) + " before conversion " + HRD_MSB+ " - third byte "+ bString + " - "+s2);
+            	hrdMSBReceived = true;
+            	break;
+            //}
+            case 21: //if (MIN_HR<=UByte(frame[3])&&UByte(frame[3])<=MAX_HR) {
+            	
+            	//pulse_rate.setText(""+UByte(frame[3])+" "+frame[3]);
+            	//HR = UByte(frame[3]);
+            	HRD_LSB = integer1;
+            	hrdLSBReceived = true;
+            	//if (D) Log.i(TAG, frameCount+") HR-D LSB "+ UByte(frame[3]) + " before conversion " + HRD_LSB + " - third byte "+ bString + " - "+s2);
+            	break;
+            //}
+            case 22://if (MIN_HR<=UByte(frame[3])&&UByte(frame[3])<=MAX_HR) {
+            	
+            	//pulse_rate.setText(""+UByte(frame[3])+" "+frame[3]);
+            	//HR = UByte(frame[3]);
+            	E_HRD_MSB = integer1;
+            	ehrdMSBReceived = true;
+            	//if (D) Log.i(TAG, frameCount+") E-HR-D MSB "+ UByte(frame[3]) + " before conversion " + E_HRD_MSB + " - third byte "+ bString+" - "+s2);
+            	break;
+            //}
+            case 23://if (MIN_HR<=UByte(frame[3])&&UByte(frame[3])<=MAX_HR) {
+            	//if (18<UByte(frame[3])&&UByte(frame[3])<321) {Log.i(TAG, frameCount+") E-HR-D LSB " + frame[3]);}
+            	
+            	//pulse_rate.setText(""+UByte(frame[3])+" "+frame[3]);
+            	//HR = UByte(frame[3]);
+            	E_HRD_LSB = integer1;
+            	ehrdLSBReceived = true;
+            	//if (D) Log.i(TAG, frameCount+") E-HR-D LSB "+ UByte(frame[3]) + " before conversion " + E_HRD_LSB + " - third byte "+ bString+" - "+s2);
+            	break;
+            //}
+            case 3:
+//                case 9:
+//                case 16:
+//                case 17:
+            	pulse_sat.setText(""+UByte(frame[3]));
+            	SPO2 = UByte(frame[3]);
+            	break;
+        }
+        //if (D) Log.i(TAG, "High quality measurement yes? "+SPA);
+        
+        String hrdMSB = "HR D MSB:"+HRD_MSB+"-"+String.format("%8s", Integer.toBinaryString(HRD_MSB)).replace(' ', '0');
+    	String hrdLSB = "HR D LSB:"+HRD_LSB+"-"+String.format("%8s", Integer.toBinaryString(HRD_LSB)).replace(' ', '0');
+    	String ehrdMSB = "E HR D MSB:"+E_HRD_MSB+"-"+String.format("%8s", Integer.toBinaryString(E_HRD_MSB)).replace(' ', '0');
+    	String ehrdLSB = "E HR D LSB:"+E_HRD_LSB+"-"+String.format("%8s", Integer.toBinaryString(E_HRD_LSB)).replace(' ', '0');
+        //if (D) Log.i(TAG, hrdMSB +" ; "+ hrdLSB +" ; "+ ehrdMSB +" ; "+ ehrdLSB);
+    	
+    	//Combining the Most Significant Byte and Least Significant Byte to get pulse rate
+    	if (hrMSBReceived&&hrLSBReceived&&SPA) {
+        	HR = ((HR_MSB & 0x03) << 7) | (HR_LSB);
+        	
+        	if (HR > 0) {
+            	pulse_rate.setText(""+HR);
+            	/*String result = "HR:"+HR+" - "+String.format("%16s", Integer.toBinaryString(HR)).replace(' ', '0');
+            	if (D) Log.i(TAG, hrdMSB + " "+hrdLSB+" "+result);*/
+            	
+            	HR_MSB = 0;
+                HR_LSB = 0;
+                hrMSBReceived = false;
+                hrLSBReceived = false;
+                
+        	} else {
+        		if (D) Log.d(TAG, "HR is 0 huh? ");
+        	}
+        }
+    	
+    	if (ehrMSBReceived&&ehrLSBReceived&&SPA) {
+        	HR = ((E_HR_MSB & 0x03) << 7) | (E_HR_LSB);
+        	
+        	if (HR > 0) {
+            	pulse_rate.setText(""+HR+" extended");
+            	/*String result = "HR:"+HR+" - "+String.format("%16s", Integer.toBinaryString(HR)).replace(' ', '0');
+            	if (D) Log.i(TAG, hrdMSB + " "+hrdLSB+" "+result);*/
+            	
+            	E_HR_MSB = 0;
+            	E_HR_LSB = 0;
+            	ehrMSBReceived = false;
+            	ehrLSBReceived = false;
+                
+        	} else {
+        		if (D) Log.d(TAG, "HR is 0 huh? ");
+        	}
+        }
+    	
+        if (hrdMSBReceived&&hrdLSBReceived&&SPA) {
+        	HR = ((HRD_MSB & 0x03) << 7) | (HRD_LSB);
+        	
+        	if (HR > 0) {
+            	pulse_rate.setText(""+HR+" D");
+            	String result = "HR:"+HR+" - "+String.format("%16s", Integer.toBinaryString(HR)).replace(' ', '0');
+            	//if (D) Log.i(TAG, hrdMSB + " "+hrdLSB+" "+result);
+            	
+            	HRD_MSB = 0;
+                HRD_LSB = 0;
+                hrdMSBReceived = false;
+                hrdLSBReceived = false;
+                
+        	} else {
+        		if (D) Log.d(TAG, "HR is 0 huh? "+hrdMSB + " "+hrdLSB);
+        	}
+        }
+        
+        if (ehrdMSBReceived&&ehrdLSBReceived&&SPA) {
+        	HR = ((E_HRD_MSB & 0x03) << 7) | (E_HRD_LSB);
+        	if (HR >0) { 
+            	
+            	pulse_rate.setText(""+HR+" D extended");
+            	String result = "HR:"+HR+" - "+String.format("%16s", Integer.toBinaryString(HR)).replace(' ', '0');
+            	//if (D) Log.i(TAG, ehrdMSB + " "+ehrdLSB+" "+result);
+            	
+            	E_HRD_MSB = 0;
+                E_HRD_LSB = 0;
+                ehrdMSBReceived = false;
+                ehrdLSBReceived = false;
+                
+        	} else {
+        		if (D) Log.d(TAG, "HR is 0 huh? "+ehrdMSB + " "+ehrdLSB);
+        	}
+        }
+        
+        //if (D) Log.d(TAG, frameCount+") - packetpulse rate is "+HR+" oxigen saturation is "+SPO2);
+        
+        if(send_udp){
+        	switch(Integer.parseInt(bposettings.getString("selected_output_format", "0"))){
+        	case PREF_OUTPUT_TXT:
+        		Date date = new Date();
+        		//String udpMessage = String.format("%d, %d, %d, %d, %d", UByte(frame[0]), UByte(frame[1]),
+        		//		UByte(frame[2]), UByte(frame[3]), UByte(frame[4]));
+        		String udpMessage = String.format("%d, %d, %d", UByte(frame[2]), HR, SPO2);
+        		SendMessageByUdp("OX, " + frameCount + ", " + date.getTime() + ", " + udpMessage + "\n");
+        		break;
+        	case PREF_OUTPUT_RAW:
+        		SendBytesByUdp(frame);
+        		break;
+        	}
+        }
+        frameCount++;
+    	
+    }
+    
+    //Converting byte to integer for the negative numbers
+    //For example, status's range is 128-255 but they are read as byte ==> -127 to 0(or -1?)
+    private int UByte(byte b){
+    	if(b<0) { 
+    		// if negative {
+    		//return (int) ((b&0x7F) + 128 );
+    		int a = (int) b;
+    		return (a + 255);
+    	} else return (int) b;
+    }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
     	Log.i(TAG, "request code was "+requestCode+" and result code was "+resultCode);
