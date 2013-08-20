@@ -73,7 +73,7 @@ public class BluetoothCommService {
 
         // Give the new state to the Handler so the UI Activity can update
         //mHandler.obtainMessage(BluePulse.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
-        mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
+        mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
     }
 
     /**
@@ -146,9 +146,9 @@ public class BluetoothCommService {
         mConnectedThread.start();
 
         // Send the name of the connected device back to the UI Activity
-        Message msg = mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_DEVICE_NAME);
+        Message msg = mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_DEVICE_NAME);
         Bundle bundle = new Bundle();
-        bundle.putString(BluetoothOscilloscope.DEVICE_NAME, device.getName());
+        bundle.putString(BluetoothPulseOximeter.DEVICE_NAME, device.getName());
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
@@ -190,9 +190,9 @@ public class BluetoothCommService {
         setState(STATE_LISTEN);
 
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(BluetoothOscilloscope.TOAST, "Unable to connect device");
+        bundle.putString(BluetoothPulseOximeter.TOAST, "Unable to connect device");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
     }
@@ -204,9 +204,9 @@ public class BluetoothCommService {
         setState(STATE_LISTEN);
 
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(BluetoothOscilloscope.TOAST, "Device connection was lost");
+        bundle.putString(BluetoothPulseOximeter.TOAST, "Device connection was lost");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
     }
@@ -402,7 +402,7 @@ public class BluetoothCommService {
 //                	
                     // Send the obtained bytes to the UI Activity
                 	if (bytesReceived>-1) {
-                		mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_READ, bytesReceived, -1, buffer).sendToTarget();
+                		mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_READ, bytesReceived, -1, buffer).sendToTarget();
                 	}
                     
                 } catch (IOException e) {
@@ -427,7 +427,7 @@ public class BluetoothCommService {
                 mmOutStream.write(buffer);
 
                 // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_WRITE, -1, -1, buffer)
+                mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_WRITE, -1, -1, buffer)
                         .sendToTarget();
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);

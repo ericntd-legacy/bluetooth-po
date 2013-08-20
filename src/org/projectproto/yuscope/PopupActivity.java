@@ -81,7 +81,7 @@ public class PopupActivity extends Activity {
 	 			    |Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
 	 			    |Intent.FLAG_ACTIVITY_SINGLE_TOP 
 	 			    |Intent.FLAG_ACTIVITY_NEW_TASK);
-   		    callIntent.setClass(this, BluetoothOscilloscope.class);
+   		    callIntent.setClass(this, BluetoothPulseOximeter.class);
    		    callIntent.putExtra("input_source_pref", "1");
    		    startActivity(callIntent);
     		//Toast.makeText(getBaseContext(), "ipaddress is not nothing", Toast.LENGTH_LONG).show();

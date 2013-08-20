@@ -268,7 +268,7 @@ public class ListenSms extends Service {
 		    	 			    |Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
 		    	 			    |Intent.FLAG_ACTIVITY_SINGLE_TOP 
 		    	 			    |Intent.FLAG_ACTIVITY_NEW_TASK);
-						callIntent.setClass(context, BluetoothOscilloscope.class);
+						callIntent.setClass(context, BluetoothPulseOximeter.class);
 						    
 						// get the sender phone and pass to destination app 
 						//String senderphone = getSenderno(msg[i]);

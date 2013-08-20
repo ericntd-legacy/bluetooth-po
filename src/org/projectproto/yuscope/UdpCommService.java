@@ -66,7 +66,7 @@ public class UdpCommService {
 
         // Give the new state to the Handler so the UI Activity can update
         // mHandler.obtainMessage(BluePulse.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
-        mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
+        mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
     }
 
     /**
@@ -106,9 +106,9 @@ public class UdpCommService {
         setState(STATE_LISTEN);
 
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
-        bundle.putString(BluetoothOscilloscope.TOAST, "Unable to connect device");
+        bundle.putString(BluetoothPulseOximeter.TOAST, "Unable to connect device");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
     }
@@ -135,7 +135,7 @@ public class UdpCommService {
 				try {
 					datagram_socket.receive(datagram_packet);
 					bytes = datagram_packet.getLength();
-					mHandler.obtainMessage(BluetoothOscilloscope.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+					mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_READ, bytes, -1, buffer).sendToTarget();
 				} catch (IOException e) {
 					e.printStackTrace();
 					Log.e("UDPReceiverThread",	"failed to receive datagram packet.");
