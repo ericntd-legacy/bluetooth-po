@@ -293,7 +293,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 				bposettingseditor.commit();
 			}
 		}
-        if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
+        /*if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
         	if (!mBluetoothAdapter.isEnabled()) {
         		Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         		startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
@@ -303,7 +303,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         	}
         } else {
         	if (mUdpCommClient == null) setupOscilloscope();
-        }
+        }*/
         RefreshSettings();
     }
 

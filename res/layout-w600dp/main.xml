@@ -16,8 +16,8 @@
 
     <RelativeLayout
         android:id="@id/Waveform"
-        android:layout_width="@dimen/waveform_small_w"
-        android:layout_height="@dimen/waveform_small_h"
+        android:layout_width="@dimen/waveform_med_w"
+        android:layout_height="@dimen/waveform_med_h"
         android:layout_below="@id/txt_appname" >
 
         <org.projectproto.yuscope.WaveformView

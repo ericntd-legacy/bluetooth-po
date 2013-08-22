@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Waveform view -->
+    <dimen name="waveform_med_w">400dp</dimen>
+    <dimen name="waveform_med_h">200dp</dimen>
+    <dimen name="waveform_small_w">330dp</dimen>
+    <dimen name="waveform_small_h">165dp</dimen>
+    <dimen name="waveform_large_w">430dp</dimen>
+    <dimen name="waveform_large_h">215dp</dimen>
+    
+    <!-- Text -->
+    <dimen name="txt_small">12sp</dimen>
+    <dimen name="txt_med">16sp</dimen>
+    
+</resources>

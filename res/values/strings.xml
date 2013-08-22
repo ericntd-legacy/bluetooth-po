@@ -31,5 +31,6 @@
 <!--    <string name="discoverable">Make discoverable</string>-->
 <!--    <string name="graph">View Graph</string>-->
 <!--    <string name="sendudp">Send to remote</string>-->
-    
+    <string name="test1">Testing 1</string>
+    <string name="test2">Testing 2</string>
 </resources>

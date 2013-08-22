@@ -24,6 +24,20 @@ public final class R {
         public static final int status_color=0x7f040005;
         public static final int timebase_color=0x7f040004;
     }
+    public static final class dimen {
+        public static final int txt_med=0x7f0a0007;
+        /**  Text 
+         */
+        public static final int txt_small=0x7f0a0006;
+        public static final int waveform_large_h=0x7f0a0005;
+        public static final int waveform_large_w=0x7f0a0004;
+        public static final int waveform_med_h=0x7f0a0001;
+        /**  Waveform view 
+         */
+        public static final int waveform_med_w=0x7f0a0000;
+        public static final int waveform_small_h=0x7f0a0003;
+        public static final int waveform_small_w=0x7f0a0002;
+    }
     public static final class drawable {
         public static final int android_off=0x7f020001;
         public static final int android_on=0x7f020002;
@@ -115,7 +129,7 @@ public final class R {
         public static final int popupview=0x7f030004;
     }
     public static final class menu {
-        public static final int mainmenu=0x7f0a0000;
+        public static final int mainmenu=0x7f0b0000;
     }
     public static final class raw {
         public static final int sound2=0x7f080000;
@@ -206,6 +220,14 @@ public final class R {
         public static final int status_label=0x7f05000c;
         public static final int status_off=0x7f05000d;
         public static final int status_on=0x7f05000e;
+        /**  Options Menu 
+    <string name="connect">Connect a device</string>
+    <string name="discoverable">Make discoverable</string>
+    <string name="graph">View Graph</string>
+    <string name="sendudp">Send to remote</string>
+         */
+        public static final int test1=0x7f050056;
+        public static final int test2=0x7f050057;
         public static final int timebase_default=0x7f050011;
         public static final int title_connected_to=0x7f050002;
         public static final int title_connecting=0x7f050001;
