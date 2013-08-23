@@ -33,4 +33,5 @@
 <!--    <string name="sendudp">Send to remote</string>-->
     <string name="test1">Testing 1</string>
     <string name="test2">Testing 2</string>
+    <string name="test3">Testing 3</string>
 </resources>

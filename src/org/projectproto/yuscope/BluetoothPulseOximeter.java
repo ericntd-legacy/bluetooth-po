@@ -39,6 +39,7 @@ import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuInflater;
@@ -50,7 +51,9 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -58,6 +61,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.TextView.OnEditorActionListener;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.Resources;
 import android.preference.PreferenceManager;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -70,6 +74,13 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 	
 	// Run/Pause status
     private boolean bReady = false;
+    
+    //Screen density, dimension and scale
+    private int screenDensity = 160;//can only of these values: 120, 160, 240, 320 or 480, this is not actually density but density buckets instead
+    //Android somehow scale different densities to most appropriate buckets
+    private double scale = 1;//screenDensity/160
+    private int screenLongDp = 0;//width in pixel * scale
+    private int screenLongPx = 0;
 
     // Message types sent from the BluetoothCommService Handler
     public static final int MESSAGE_STATE_CHANGE = 1;
@@ -86,13 +97,11 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     private static final int REQUEST_CONNECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
     
-    // bt-uart constants
-//    private static final int MAX_SAMPLES = 640;
-//    private static final int  MAX_LEVEL	= 240;
-    private static final int MAX_SAMPLES = 550;
-    private static final int  MAX_LEVEL	= 350;
-    private static final int  DATA_START = (MAX_LEVEL + 1);
-    private static final int  DATA_END = (MAX_LEVEL + 2);
+    //dimensions of the waveform chart, affecting the drawing
+    private static int waveform_w = 550;
+    private static int  waveform_h	= 350;
+    //private static int  DATA_START = (waveform_h + 1);
+    //private static int  DATA_END = (waveform_h + 2);
 
     private static final byte  REQ_DATA = 0x00;
     private static final byte  ADJ_HORIZONTAL = 0x01;
@@ -134,8 +143,8 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 	static byte ch1_index = 6, ch2_index = 6;
 	static byte ch1_pos = 0, ch2_pos = 0;	// 0 to 60
 	//What are ch1_data and ch2_data?
-	private int[] ch1_data = new int[MAX_SAMPLES];
-	private int[] ch2_data = new int[MAX_SAMPLES];	
+	private int[] ch1_data = null;
+	//private int[] ch2_data = null;	
 	
 	private int dataIndex=0, dataIndex1=0, dataIndex2=0;
 	private boolean bDataAvailable=false;
@@ -205,6 +214,21 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         requestWindowFeature(Window.FEATURE_NO_TITLE);        
         setContentView(R.layout.main);
         
+        //Checking the density of the screen
+        DisplayMetrics metrics = new DisplayMetrics();    
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);    
+        screenDensity = metrics.densityDpi;
+        int w = metrics.widthPixels;
+        int h = metrics.heightPixels;
+        double x = metrics.xdpi;
+        double y =  metrics.ydpi;
+        
+        screenLongPx = w;
+        scale = screenDensity/160;
+        screenLongDp = w*160/screenDensity;
+        
+        Log.i(TAG, "the phone's screen density is "+screenDensity+" dpi "+w+" "+h+" "+x+" "+y+" screen width in dp is "+screenLongDp);
+        
         bposettings = PreferenceManager.getDefaultSharedPreferences(this);
         // Log.v("SharedPreferencesName", PreferenceManager.);
         bposettingseditor = bposettings.edit();
@@ -265,6 +289,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 		buttonSms = (ImageButton) findViewById(R.id.btn_sms);
 		buttonStream2Doc = (Button) this.findViewById(R.id.button_data);
 		mConnectButton = (Button) findViewById(R.id.button_connect);
+		
 		mWaveform = (WaveformView)findViewById(R.id.WaveformArea);
 		
 		SetListeners();
@@ -274,6 +299,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     @Override
     public void onStart() {
         super.onStart();
+        
         // If BT is not on, request that it be enabled.
         // setupOscilloscope() will then be called during onActivityResult
         Bundle extras = getIntent().getExtras();
@@ -293,7 +319,8 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 				bposettingseditor.commit();
 			}
 		}
-        /*if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
+        
+		if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
         	if (!mBluetoothAdapter.isEnabled()) {
         		Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         		startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
@@ -303,8 +330,36 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         	}
         } else {
         	if (mUdpCommClient == null) setupOscilloscope();
-        }*/
+        }
+		
         RefreshSettings();
+    }
+    
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus == true) {
+        	int waveformW = screenLongPx*2/3;
+            int waveformH = waveformW/2;
+            
+        	RelativeLayout waveformLayout = (RelativeLayout) findViewById(R.id.Waveform);
+        	RelativeLayout.LayoutParams adaptLayout = new RelativeLayout.LayoutParams(waveformW, waveformH);//the parameters are in pixel not dp
+        	adaptLayout.addRule(RelativeLayout.BELOW, R.id.txt_appname);
+        	adaptLayout.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        	waveformLayout.setLayoutParams(adaptLayout);
+        	
+            Log.i(TAG, "waveform relative layout dimension is "+waveformW+" x "+waveformH);
+            
+            //RelativeLayout.LayoutParams adaptLayout = new RelativeLayout.LayoutParams(600, 300);
+            //waveformLayout.setLayoutParams(adaptLayout);
+            
+            mWaveform.setSize(waveformW, waveformH);
+            waveform_w = waveformW;
+            waveform_h = waveformH;
+            
+            ch1_data = new int[waveform_w];
+            //ch2_data = new int[waveform_w];
+        }
     }
 
     @Override
@@ -350,10 +405,11 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         frameCount = 0;
         packetCount = 0;
         
-        for(int i=0; i<MAX_SAMPLES; i++){
+        //Why do we need to do this?
+        /*for(int i=0; i<waveform_w; i++){
         	ch1_data[i] = 0;
         	ch2_data[i] = 0;
-        }
+        }*/
         
         RefreshSettings();
         
@@ -586,7 +642,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     }
     
     private int toScreenPos(byte position){
-    	return ( (int)MAX_LEVEL - (int)position*7 - 8);
+    	return ( (int)waveform_h - (int)position*7 - 8);
     }
 
     @Override
@@ -670,10 +726,10 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 	                byte[] readBuf = (byte[]) msg.obj;
 	                data_length = msg.arg1;
 	                
-	                x = frameCount % MAX_SAMPLES;//framecount is 0 isn't it?
+	                x = frameCount % waveform_w;//framecount is 0 isn't it?
 	                raw = UByte(readBuf[2]);//This is the frame's 3rd byte containing the waveform data - is it for HR or SPO2 or both somehow?
 	                ch1_data[x] = raw;
-	                mWaveform.set_data(ch1_data, ch2_data);
+	                mWaveform.set_data(ch1_data, null);
 	                
 	                //Retrieve pulse rate and SpO2 and display on top right corner of the app's main screen
 	                getMeasurements(readBuf);

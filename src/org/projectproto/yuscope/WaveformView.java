@@ -27,13 +27,13 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 	
 //	private final int width = 320;
 //	private final int height = 240;
-	private final int width = 550;
-	private final int height = 350;
+	private int width = 500;//dp or px?
+	private int height = 350;
 	
 //	private static int[] ch1_data = new int[320];
 //	private static int[] ch2_data = new int[320];
-	private static int[] ch1_data = new int[550];
-	private static int[] ch2_data = new int[550];
+	private static int[] ch1_data = null;
+	//private static int[] ch2_data = null;
 //	private static int ch1_pos = 120, ch2_pos = 120;
 	//private static int ch1_pos = 175, ch2_pos = 175;
 	private static int ch1_pos = 350, ch2_pos = 350;
@@ -50,10 +50,14 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		//super(context);
 		getHolder().addCallback(this);
 		
+		width = 500;
+		ch1_data = new int[width];
+		//ch2_data = new int[width];
+		
 		int i;
 		for(i=0; i<width; i++){
 			ch1_data[i] = ch1_pos;
-			ch2_data[i] = ch2_pos;
+			//ch2_data[i] = ch2_pos;
 		}
 		
 		plot_thread = new WaveformPlotThread(getHolder(), this);
@@ -108,6 +112,13 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		
 	}
 	
+	public void setSize(int w, int h) {
+		if (w!=0) this.width = w;
+		if (h!=0) this.height = h;
+		ch1_data = new int[width];
+		//ch2_data = new int[width];
+	}
+	
 	public void set_data(int[] data1, int[] data2 ){
 		/*int x;
 		plot_thread.setRunning(false);
@@ -132,9 +143,9 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 			x++;
 		}*/
 		
-		for (int i=0; i<550; i++) {
+		for (int i=0; i<width; i++) {
 			ch1_data[i] = height-data1[i]+1;
-			ch2_data[i] = height-data2[i]+1;
+			//ch2_data[i] = height-data2[i]+1;
 		}
 		plot_thread.setRunning(true);
 	}
@@ -172,7 +183,7 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		
 		// plot data
 		for(int x=0; x<(width-1); x++){			
-			canvas.drawLine(x+1, ch2_data[x], x+2, ch2_data[x+1], ch2_color);
+			//canvas.drawLine(x+1, ch2_data[x], x+2, ch2_data[x+1], ch2_color);
 			canvas.drawLine(x+1, ch1_data[x], x+2, ch1_data[x+1], ch1_color);
 		}
 	}

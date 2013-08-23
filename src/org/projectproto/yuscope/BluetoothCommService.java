@@ -19,6 +19,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.ParcelUuid;
 import android.util.Log;
 
 /**
@@ -300,12 +301,19 @@ public class BluetoothCommService {
             // given BluetoothDevice
             try {
                 //tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
+            	
+            	//For devices < 4.0.3
             	Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
                 tmp = (BluetoothSocket) m.invoke(device, 1);
+                
+                //For devices 4.0.3 and above
+                /*Method method = device.getClass().getMethod("getUuids", null);
+            	ParcelUuid[] phoneUuids = (ParcelUuid[]) method.invoke(device, null);
+                tmp = device.createRfcommSocketToServiceRecord(phoneUuids[0].getUuid());*/
             } //catch (IOException e) {
                 //Log.e(TAG, "create() failed", e);
             //}
-        catch (Exception e2) {
+            catch (Exception e2) {
             	Log.e(TAG, "some other exception", e2);
             }
             mmSocket = tmp;
