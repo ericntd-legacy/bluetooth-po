@@ -12,16 +12,18 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 //import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.SurfaceHolder;
+import android.view.ViewGroup;
 
 public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 	//Debugging
 	private final String TAG = "WaveformView";
-	private final boolean D = true;
+	private final boolean D = false;
 	
 	private WaveformPlotThread plot_thread;
 	
@@ -33,10 +35,10 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 //	private static int[] ch1_data = new int[320];
 //	private static int[] ch2_data = new int[320];
 	private static int[] ch1_data = null;
-	//private static int[] ch2_data = null;
+	private static int[] ch2_data = null;
 //	private static int ch1_pos = 120, ch2_pos = 120;
 	//private static int ch1_pos = 175, ch2_pos = 175;
-	private static int ch1_pos = 350, ch2_pos = 350;
+	private static int ch1_pos = 350, ch2_pos = 350;//what are these?
 	
 	private Paint ch1_color = new Paint();
 	private Paint ch2_color = new Paint();
@@ -52,12 +54,12 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		
 		width = 500;
 		ch1_data = new int[width];
-		//ch2_data = new int[width];
+		ch2_data = new int[width];
 		
 		int i;
 		for(i=0; i<width; i++){
 			ch1_data[i] = ch1_pos;
-			//ch2_data[i] = ch2_pos;
+			ch2_data[i] = ch2_pos;
 		}
 		
 		plot_thread = new WaveformPlotThread(getHolder(), this);
@@ -65,7 +67,8 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		ch1_color.setColor(Color.YELLOW);
 		ch2_color.setColor(Color.RED);
 		grid_paint.setColor(Color.rgb(100, 100, 100));
-		cross_paint.setColor(Color.rgb(70, 100, 70));
+		cross_paint.setColor(Color.rgb(152, 152, 152));
+		//cross_paint.setColor(Color.LTGRAY);
 		outline_paint.setColor(Color.GREEN);
 	}
 
@@ -116,7 +119,7 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		if (w!=0) this.width = w;
 		if (h!=0) this.height = h;
 		ch1_data = new int[width];
-		//ch2_data = new int[width];
+		ch2_data = new int[width];
 	}
 	
 	public void set_data(int[] data1, int[] data2 ){
@@ -143,35 +146,46 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 			x++;
 		}*/
 		
-		for (int i=0; i<width; i++) {
+		for (int i=0; i<width-1; i++) {
 			ch1_data[i] = height-data1[i]+1;
+			//ch1_data[i] = data1[1];
+			if (D) Log.d(TAG, "data "+ch1_data[i]+" - "+(ch1_data[i]==ch1_data[i+1])+" - height is "+height+" - count is "+i);
 			//ch2_data[i] = height-data2[i]+1;
+			ch2_data[i] = data2[i];
 		}
 		plot_thread.setRunning(true);
 	}
 	
 	public void PlotPoints(Canvas canvas){//obviously canvas would be null here!
-		
+		if (D) Log.d(TAG, "width is "+width+" length of the data array "+ch1_data.length);
 		// clear screen
 		canvas.drawColor(Color.rgb(20, 20, 20));
 		
 		// draw grids
 	    for(int vertical = 1; vertical<10; vertical++){
-	    	canvas.drawLine(
+	    	if (vertical == 5) canvas.drawLine(
+	    			vertical*(width/10)+1, 1,
+	    			vertical*(width/10)+1, height+1,
+	    			cross_paint);
+	    	else canvas.drawLine(
 	    			vertical*(width/10)+1, 1,
 	    			vertical*(width/10)+1, height+1,
 	    			grid_paint);
 	    }	    	
 	    for(int horizontal = 1; horizontal<10; horizontal++){
-	    	canvas.drawLine(
+	    	if (horizontal == 5) canvas.drawLine(
+	    			1, horizontal*(height/10)+1,
+	    			width+1, horizontal*(height/10)+1,
+	    			cross_paint);
+	    	else canvas.drawLine(
 	    			1, horizontal*(height/10)+1,
 	    			width+1, horizontal*(height/10)+1,
 	    			grid_paint);
 	    }	    	
 	    
 	    // draw center cross
-		canvas.drawLine(0, (height/2)+1, width+1, (height/2)+1, cross_paint);
-		canvas.drawLine((width/2)+1, 0, (width/2)+1, height+1, cross_paint);
+		//canvas.drawLine(0, (height/2)+1, width+1, (height/2)+1, cross_paint);
+		//canvas.drawLine((width/2)+1, 0, (width/2)+1, height+1, cross_paint);
 		
 		// draw outline
 		canvas.drawLine(0, 0, (width+1), 0, outline_paint);	// top
@@ -182,10 +196,35 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		canvas.drawLine(0, 0, 0, (height+1), outline_paint); //left
 		
 		// plot data
-		for(int x=0; x<(width-1); x++){			
+		for(int x=0; x<(width-1); x++){
+			Point start = new Point(x+1, ch1_data[x]);
+			Point stop = new Point(x+2, ch1_data[x+1]);
 			//canvas.drawLine(x+1, ch2_data[x], x+2, ch2_data[x+1], ch2_color);
 			canvas.drawLine(x+1, ch1_data[x], x+2, ch1_data[x+1], ch1_color);
+			if (D) {
+				if (ch1_data[x]==ch1_data[x+1]) Log.d(TAG, "flat "+ch1_data[x]);
+				else Log.d(TAG, "not flat");
+			}
+			//Log.d(TAG, "point #"+x+1);
 		}
+	}
+	
+	@Override
+	public void onMeasure(int w, int h) {
+		super.onMeasure(w, h);
+		
+		int width;
+		int height;
+		
+		int widthMode = MeasureSpec.getMode(w);
+	    int widthSize = MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY);
+	    int heightMode = MeasureSpec.getMode(h);
+	    int heightSize = MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY);
+	    
+	    width = widthSize;
+	    height = heightSize;
+	    
+		setMeasuredDimension(width, height);
 	}
 
 }

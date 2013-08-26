@@ -43,7 +43,10 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MenuInflater;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -144,7 +147,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 	static byte ch1_pos = 0, ch2_pos = 0;	// 0 to 60
 	//What are ch1_data and ch2_data?
 	private int[] ch1_data = null;
-	//private int[] ch2_data = null;	
+	private int[] ch2_data = null;	
 	
 	private int dataIndex=0, dataIndex1=0, dataIndex2=0;
 	private boolean bDataAvailable=false;
@@ -223,7 +226,8 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         double x = metrics.xdpi;
         double y =  metrics.ydpi;
         
-        screenLongPx = w;
+        if (w>h) screenLongPx = w;
+        else screenLongPx = h;
         scale = screenDensity/160;
         screenLongDp = w*160/screenDensity;
         
@@ -339,26 +343,33 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus == true) {
+        	//Hide the test textview
+        	TextView testView = (TextView) findViewById(R.id.testTextview);
+        	testView.setVisibility(View.INVISIBLE);
+        	
         	int waveformW = screenLongPx*2/3;
             int waveformH = waveformW/2;
+            Log.i(TAG, "waveform relative layout dimension is "+waveformW+" x "+waveformH);
+            //waveformW = 960*2/3;
+            //waveformH = 480*2/3;
             
         	RelativeLayout waveformLayout = (RelativeLayout) findViewById(R.id.Waveform);
         	RelativeLayout.LayoutParams adaptLayout = new RelativeLayout.LayoutParams(waveformW, waveformH);//the parameters are in pixel not dp
-        	adaptLayout.addRule(RelativeLayout.BELOW, R.id.txt_appname);
-        	adaptLayout.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        	adaptLayout.addRule(RelativeLayout.BELOW, R.id.test_layout);
         	waveformLayout.setLayoutParams(adaptLayout);
+            
+        	//Only 1 of the folloiwng 2 lines is necessary
+        	//mWaveform.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);//for some strange reason, this is not setting the dimension of the custom view right
+        	mWaveform.setLayoutParams(new RelativeLayout.LayoutParams(waveformW, waveformH));//I have to use RelativeLayout.LayoutParams here because RelativeLayout is the parent view of this custom view
         	
-            Log.i(TAG, "waveform relative layout dimension is "+waveformW+" x "+waveformH);
-            
-            //RelativeLayout.LayoutParams adaptLayout = new RelativeLayout.LayoutParams(600, 300);
-            //waveformLayout.setLayoutParams(adaptLayout);
-            
             mWaveform.setSize(waveformW, waveformH);
             waveform_w = waveformW;
             waveform_h = waveformH;
             
+            if (D) Log.i(TAG, mWaveform.getWidth()+" - "+mWaveform.getHeight());
+            
             ch1_data = new int[waveform_w];
-            //ch2_data = new int[waveform_w];
+            ch2_data = new int[waveform_w];
         }
     }
 
@@ -418,14 +429,14 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     //Settings are stored in the application's shared preferences
     private void RefreshSettings() {
     	if (!bposettings.contains("enable_udp_stream")){
-        	Log.v("setupOscilloscope", "PREF_FILE does not contain 'enable_udp_stream' key");
+        	if (D) Log.v("setupOscilloscope", "PREF_FILE does not contain 'enable_udp_stream' key");
         	bposettingseditor.putBoolean("enable_udp_stream", false);
         	bposettingseditor.commit();
         }
         send_udp = bposettings.getBoolean("enable_udp_stream", false);
         chkboxEnableUDP.setChecked(send_udp);
         if (!bposettings.contains("destination_host")){
-        	Log.v("setupOscilloscope", "PREF_FILE does not contain 'destination_host' key");
+        	if (D) Log.v("setupOscilloscope", "PREF_FILE does not contain 'destination_host' key");
         	bposettingseditor.putString("destination_host", "127.0.0.1");
         	bposettingseditor.commit();
         }
@@ -433,7 +444,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         txtHost.setText(destination_host);
 //        editTextHost.setText(destination_host);
         if (!bposettings.contains("destination_port")){
-        	Log.v("setupOscilloscope", "PREF_FILE does not contain 'destination_port' key");
+        	if (D) Log.v("setupOscilloscope", "PREF_FILE does not contain 'destination_port' key");
         	bposettingseditor.putString("destination_port", "12345");
         	bposettingseditor.commit();
         }
@@ -441,13 +452,13 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         txtPort.setText(bposettings.getString("destination_port", "12345"));
 //        editTextPort.setText(bposettings.getString("destination_port", "12345"));
         if (!bposettings.contains("enable_sms_listener")){
-        	Log.v("setupOscilloscope", "PREF_FILE does not contain 'enable_sms_listener' key");
+        	if (D) Log.v("setupOscilloscope", "PREF_FILE does not contain 'enable_sms_listener' key");
         	bposettingseditor.putBoolean("enable_sms_listener", true);
         	bposettingseditor.commit();
         }
         ChangeDestination();
-        Log.v("SharedPreferences", "selected_input_source="+bposettings.getString("selected_input_source", "1"));
-        Log.v("SharedPreferences", "selected_output_format="+bposettings.getString("selected_output_format", "0"));
+        if (D) Log.v("SharedPreferences", "selected_input_source="+bposettings.getString("selected_input_source", "1"));
+        if (D) Log.v("SharedPreferences", "selected_output_format="+bposettings.getString("selected_output_format", "0"));
     }
     
     private void SetListeners() {
@@ -462,36 +473,36 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 		buttonTestUDP.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				SendLiteralByUdp();
-				Log.v("TestUdp#onClick", "ButtonSendDebugMessage");
+				if (D) Log.v("TestUdp#onClick", "ButtonSendDebugMessage");
 			}
 		});
 		buttonActivateCall.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				ActivateCall();
-				Log.v("TestCallDoc#onClick", "ButtonActivateCall");
+				if (D) Log.v("TestCallDoc#onClick", "ButtonActivateCall");
 			}
 		});
 		buttonEndCall.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				EndCall();
-				Log.v("TestCallDoc#onClick", "ButtonEndCall");
+				if (D) Log.v("TestCallDoc#onClick", "ButtonEndCall");
 			}
 		});
 		buttonSms.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				SmsHrSpo2Values();
-				Log.v("TestCallDoc#onClick", "ButtonEndCall");
+				if (D) Log.v("TestCallDoc#onClick", "ButtonEndCall");
 			}
 		});
 		buttonStream2Doc.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				Stream2Doc();
-				Log.v("TestStream2Doc#onClick", "ButtonStream2Doc");
+				if (D) Log.v("TestStream2Doc#onClick", "ButtonStream2Doc");
 			}
 		});
 		mConnectButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View arg0) {
-				Log.d(TAG, "Connect BT button is clicked");
+				if (D) Log.d(TAG, "Connect BT button is clicked");
 				BTConnect();
 			}
 		});
@@ -623,7 +634,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 			datagramSocket = null;
 			datagramSocket = new DatagramSocket();
 		} catch (SocketException e) {
-			Log.e(TAG, e.toString());
+			if (D) Log.e(TAG, e.toString());
 		}
 	}
     
@@ -635,7 +646,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     private void BTConnect(){
     	//Once in here, it's already trying to establish Bluetooth connection, so why the if?
     	//if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
-    		Log.d(TAG, "opening deviceactivity");
+    		if (D) Log.d(TAG, "opening deviceactivity");
     		Intent serverIntent = new Intent(this, DeviceListActivity.class);
     		startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
     	//}
@@ -675,7 +686,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 			datagramSocket.send(datagram_packet);		
 		} catch (IOException io_exception) {
 			datagramSocket = null;
-			Log.e(TAG, io_exception.toString());
+			if (D) Log.e(TAG, io_exception.toString());
 		}
 	}
     
@@ -695,7 +706,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 			datagramSocket.send(datagram_packet);		
 		} catch (IOException io_exception) {
 			datagramSocket = null;
-			Log.e(TAG, io_exception.toString());
+			if (D) Log.e(TAG, io_exception.toString());
 		}
 	}
 
@@ -729,7 +740,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 	                x = frameCount % waveform_w;//framecount is 0 isn't it?
 	                raw = UByte(readBuf[2]);//This is the frame's 3rd byte containing the waveform data - is it for HR or SPO2 or both somehow?
 	                ch1_data[x] = raw;
-	                mWaveform.set_data(ch1_data, null);
+	                mWaveform.set_data(ch1_data, ch2_data);
 	                
 	                //Retrieve pulse rate and SpO2 and display on top right corner of the app's main screen
 	                getMeasurements(readBuf);
@@ -746,15 +757,16 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 	                               Toast.LENGTH_SHORT).show();
 	                break;
             }
-            //Log.d(TAG, " framecount is "+frameCount);
+            //if (D) Log.d(TAG, " framecount is "+frameCount);
         }
         
     };
     
     public void getMeasurements(byte[] frame) {
     	byte statusB = frame[1];
-    	
+    	int test = frame[1];
     	if ((statusB & 0x01)== 1) {//frame[1] is Byte 2 or the STATUS byte whose bits are like 0??????[SYNC Bit]
+    		//but other 
         	if (D) Log.w(TAG, "Frame Sync encountered! Status is "+UByte(statusB)+" - "+ Integer.toBinaryString(statusB));
         	frameInPacket = 1;//Frame Sync
         	packetCount++;//tracking packets based on Frame Sync instead of frameCount/25 since there might be  frames lost during transmission
@@ -764,6 +776,9 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         	//reset frameInPacket at the end of the packet
         	frameInPacket = 0;
         }
+    	if ((statusB & 0x1D)==2) {if (D) Toast.makeText(this, "reliable measurement", Toast.LENGTH_SHORT).show();}
+    	//if (D) Log.w(TAG, "Status is "+test+" - "+ String.format("%8s", Integer.toBinaryString(statusB & 0xFF)).replace(' ', '0') + " - "+ Integer.toBinaryString(statusB));
+    	if (D) Log.w(TAG, "Status is "+UByte(statusB)+" - "+ Integer.toBinaryString((statusB+256)%256) + " - "+ Integer.toBinaryString(statusB));
         
         //if (D) Log.i(TAG, "Packet No."+packetCount+" frame No."+frameInPacket); 
         //both HR and SPO2 are stored in the 4th byte which is frame[3]
@@ -806,9 +821,12 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
             	//pulse_rate.setText(""+UByte(frame[3])+" "+frame[3]);
             	//HR = UByte(frame[3]);
             	//HRD_MSB = integer1;
-            	HRD_MSB = b;
-            	//if (D) Log.i(TAG, frameCount + ") HR-D MSB "+ UByte(frame[3]) + " before conversion " + HRD_MSB+ " - third byte "+ bString + " - "+s2);
-            	hrdMSBReceived = true;
+            	if (SPA) {
+            		HRD_MSB = b;
+            		//if (D) Log.i(TAG, frameCount + ") HR-D MSB "+ UByte(frame[3]) + " before conversion " + HRD_MSB+ " - third byte "+ bString + " - "+s2);
+                	hrdMSBReceived = true;
+            	}
+            	
             	break;
             //}
             case 21: //if (MIN_HR<=UByte(frame[3])&&UByte(frame[3])<=MAX_HR) {
@@ -816,9 +834,12 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
             	//pulse_rate.setText(""+UByte(frame[3])+" "+frame[3]);
             	//HR = UByte(frame[3]);
             	//HRD_LSB = integer1;
-            	HRD_LSB = b;
-            	hrdLSBReceived = true;
-            	//if (D) Log.i(TAG, frameCount+") HR-D LSB "+ UByte(frame[3]) + " before conversion " + HRD_LSB + " - third byte "+ bString + " - "+s2);
+            	if (SPA) {
+            		HRD_LSB = b;
+            		hrdLSBReceived = true;
+                	//if (D) Log.i(TAG, frameCount+") HR-D LSB "+ UByte(frame[3]) + " before conversion " + HRD_LSB + " - third byte "+ bString + " - "+s2);
+            	}
+            	
             	break;
             //}
             case 22://if (MIN_HR<=UByte(frame[3])&&UByte(frame[3])<=MAX_HR) {
@@ -898,7 +919,8 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         	//HR = HRD_LSB+(HRD_MSB*128);
         	
         	if (HR >= 18 && HR <= 321) {
-            	pulse_rate.setText(""+HR+" D");
+            	//pulse_rate.setText(""+HR+" D");
+            	pulse_rate.setText(""+HR);
             	String result = "HR:"+HR+" - "+String.format("%16s", Integer.toBinaryString(HR)).replace(' ', '0');
             	//if (D) Log.i(TAG, hrdMSB + " "+hrdLSB+" "+result);
             	
@@ -906,9 +928,10 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
                 HRD_LSB = 0;
                 hrdMSBReceived = false;
                 hrdLSBReceived = false;
+                SPA = false;
                 
         	} else {
-        		if (D) Log.d(TAG, "HR is 0 huh? "+hrdMSB + " "+hrdLSB);
+        		if (D) Log.e(TAG, "HR is 0 huh? "+hrdMSB + " "+hrdLSB);
         	}
         }
         

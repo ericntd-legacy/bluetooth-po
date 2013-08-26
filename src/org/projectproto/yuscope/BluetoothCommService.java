@@ -53,6 +53,8 @@ public class BluetoothCommService {
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
     
+    private int dataFormat = 0;
+    
     /**
      * Constructor. Prepares a new BluetoothChat session.
      * @param context  The UI Activity Context
@@ -409,9 +411,18 @@ public class BluetoothCommService {
                 	bytesReceived = mmInStream.read(buffer);//-1 if end of stream or number of bytes read (could be 0)
 //                	
                     // Send the obtained bytes to the UI Activity
-                	if (bytesReceived>-1) {
-                		mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_READ, bytesReceived, -1, buffer).sendToTarget();
-                	}
+                	//if (bytesReceived>-1) {
+                	mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_READ, bytesReceived, -1, buffer).sendToTarget();
+                	//}
+                	String msg = new String(buffer).substring(0, bytesReceived);
+                        
+                	//Selecting data format #2	
+                    /*try {
+						this.handleMessage(msg);//needs to wait for 5 seconds!!!
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						if (D) Log.e(TAG, "couldn't read response", e);
+					}*/
                     
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
@@ -424,6 +435,34 @@ public class BluetoothCommService {
 					Log.e(TAG, "some weird exception thrown", e);
 				}
             }
+        }
+        
+        private void handleMessage(String msg) throws Exception{
+        	byte[] buffer = new byte[8];
+        	NoninBase dev = new NoninBase();
+        	int len;
+        	
+        	sendCmd(dev.cmdSelectDF());
+        	len = mmInStream.read(buffer);
+			dev.handleAck(buffer, len);
+			Log.d(TAG, "no of bytes received "+len+" - "+ new String(buffer));
+        }
+        
+        private void sendCmd(String cmd){
+        	try {
+        		byte[] byteCmd = cmd.getBytes();
+        		write(byteCmd);
+        	} catch (Exception e){
+        		e.printStackTrace();
+        	}
+    		try {
+				sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e) {
+				Log.d(TAG, "Some odd exception happens while sending commands to the pulse oximeter", e);
+			}
         }
 
         /**
@@ -449,6 +488,8 @@ public class BluetoothCommService {
                 Log.e(TAG, "close() of connect socket failed", e);
             }
         }
+        
+        
     }
     
 }
