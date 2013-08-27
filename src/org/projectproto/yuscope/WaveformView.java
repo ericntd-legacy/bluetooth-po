@@ -32,9 +32,9 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 	private int width = 500;//dp or px?
 	private int height = 350;
 	
-//	private static int[] ch1_data = new int[320];
+//	private static int[] waveformArray = new int[320];
 //	private static int[] ch2_data = new int[320];
-	private static int[] ch1_data = null;
+	private static int[] waveformArray = null;
 	private static int[] ch2_data = null;
 //	private static int ch1_pos = 120, ch2_pos = 120;
 	//private static int ch1_pos = 175, ch2_pos = 175;
@@ -53,12 +53,12 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		getHolder().addCallback(this);
 		
 		width = 500;
-		ch1_data = new int[width];
+		waveformArray = new int[width];
 		ch2_data = new int[width];
 		
 		int i;
 		for(i=0; i<width; i++){
-			ch1_data[i] = ch1_pos;
+			waveformArray[i] = ch1_pos;
 			ch2_data[i] = ch2_pos;
 		}
 		
@@ -118,20 +118,20 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 	public void setSize(int w, int h) {
 		if (w!=0) this.width = w;
 		if (h!=0) this.height = h;
-		ch1_data = new int[width];
+		waveformArray = new int[width];
 		ch2_data = new int[width];
 	}
 	
-	public void set_data(int[] data1, int[] data2 ){
+	public void setData(int[] data1 ){
 		/*int x;
 		plot_thread.setRunning(false);
 		x = 0;
 		while(x<width){
 			if(x<(data1.length)){
-				//ch1_data[x] = data1[x];
-				ch1_data[x] = height-data1[x]+1;
+				//waveformArray[x] = data1[x];
+				waveformArray[x] = height-data1[x]+1;
 			}else{
-				ch1_data[x] = ch1_pos;
+				waveformArray[x] = ch1_pos;
 			}
 			x++;
 		}
@@ -147,17 +147,16 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		}*/
 		
 		for (int i=0; i<width-1; i++) {
-			ch1_data[i] = height-data1[i]+1;
-			//ch1_data[i] = data1[1];
-			if (D) Log.d(TAG, "data "+ch1_data[i]+" - "+(ch1_data[i]==ch1_data[i+1])+" - height is "+height+" - count is "+i);
+			waveformArray[i] = height-data1[i]+1;
+			//waveformArray[i] = data1[i];
+			//if (D) Log.d(TAG, "data "+waveformArray[i]+" - "+(waveformArray[i]==waveformArray[i+1])+" - height is "+height+" - count is "+i);
 			//ch2_data[i] = height-data2[i]+1;
-			ch2_data[i] = data2[i];
 		}
 		plot_thread.setRunning(true);
 	}
 	
 	public void PlotPoints(Canvas canvas){//obviously canvas would be null here!
-		if (D) Log.d(TAG, "width is "+width+" length of the data array "+ch1_data.length);
+		if (D) Log.d(TAG, "width is "+width+" length of the data array "+waveformArray.length);
 		// clear screen
 		canvas.drawColor(Color.rgb(20, 20, 20));
 		
@@ -197,12 +196,12 @@ public class WaveformView extends SurfaceView implements SurfaceHolder.Callback{
 		
 		// plot data
 		for(int x=0; x<(width-1); x++){
-			Point start = new Point(x+1, ch1_data[x]);
-			Point stop = new Point(x+2, ch1_data[x+1]);
+			Point start = new Point(x+1, waveformArray[x]);
+			Point stop = new Point(x+2, waveformArray[x+1]);
 			//canvas.drawLine(x+1, ch2_data[x], x+2, ch2_data[x+1], ch2_color);
-			canvas.drawLine(x+1, ch1_data[x], x+2, ch1_data[x+1], ch1_color);
+			canvas.drawLine(x+1, waveformArray[x], x+2, waveformArray[x+1], ch1_color);
 			if (D) {
-				if (ch1_data[x]==ch1_data[x+1]) Log.d(TAG, "flat "+ch1_data[x]);
+				if (waveformArray[x]==waveformArray[x+1]) Log.d(TAG, "flat "+waveformArray[x]);
 				else Log.d(TAG, "not flat");
 			}
 			//Log.d(TAG, "point #"+x+1);

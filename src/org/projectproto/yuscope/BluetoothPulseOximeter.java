@@ -145,8 +145,8 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 	static byte timebase_index = 5;
 	static byte ch1_index = 6, ch2_index = 6;
 	static byte ch1_pos = 0, ch2_pos = 0;	// 0 to 60
-	//What are ch1_data and ch2_data?
-	private int[] ch1_data = null;
+	//What are wavefromArray and ch2_data?
+	private int[] wavefromArray = null;
 	private int[] ch2_data = null;	
 	
 	private int dataIndex=0, dataIndex1=0, dataIndex2=0;
@@ -231,10 +231,10 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         scale = screenDensity/160;
         screenLongDp = w*160/screenDensity;
         
-        Log.i(TAG, "the phone's screen density is "+screenDensity+" dpi "+w+" "+h+" "+x+" "+y+" screen width in dp is "+screenLongDp);
+        if (D) Log.i(TAG, "the phone's screen density is "+screenDensity+" dpi "+w+" "+h+" "+x+" "+y+" screen width in dp is "+screenLongDp);
         
         bposettings = PreferenceManager.getDefaultSharedPreferences(this);
-        // Log.v("SharedPreferencesName", PreferenceManager.);
+        // if (D) Log.v("SharedPreferencesName", PreferenceManager.);
         bposettingseditor = bposettings.edit();
         
         mBTStatus = (TextView) findViewById(R.id.txt_btstatus);
@@ -247,7 +247,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         bposettingseditor.putString("selected_input_source", String.valueOf(PREF_INPUT_SRC_BLUETOOTH));
     	bposettingseditor.commit();
         //----------
-        Log.i(TAG, "the chosen input source is "+Integer.parseInt(bposettings.getString("selected_input_source", "1")));
+        if (D) Log.i(TAG, "the chosen input source is "+Integer.parseInt(bposettings.getString("selected_input_source", "1")));
         // If the adapter is null, then Bluetooth is not supported
         if (Integer.parseInt(bposettings.getString("selected_input_source", "1")) == PREF_INPUT_SRC_BLUETOOTH){
         	if (mBluetoothAdapter == null) {
@@ -310,14 +310,14 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 		if(extras != null){
 			String remote_ip = extras.getString("remote_ip");
 			if (remote_ip != null){
-				Log.v("BluetoothOscilloscope", "receive message from service: remote_ip="+remote_ip);
+				if (D) Log.v("BluetoothOscilloscope", "receive message from service: remote_ip="+remote_ip);
 				bposettingseditor.putString("destination_host", remote_ip);
 				bposettingseditor.putBoolean("enable_udp_stream", true);
 				bposettingseditor.commit();
 			}
 			String input_source = extras.getString("input_source_pref");
 			if (input_source != null){
-				Log.v("BluetoothOscilloscope", "receive message from service: input_source="+input_source);
+				if (D) Log.v("BluetoothOscilloscope", "receive message from service: input_source="+input_source);
 				bposettingseditor.putString("selected_input_source", input_source);
 				bposettingseditor.putBoolean("enable_udp_stream", false);
 				bposettingseditor.commit();
@@ -349,9 +349,9 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         	
         	int waveformW = screenLongPx*2/3;
             int waveformH = waveformW/2;
-            Log.i(TAG, "waveform relative layout dimension is "+waveformW+" x "+waveformH);
-            //waveformW = 960*2/3;
-            //waveformH = 480*2/3;
+            if (D) Log.i(TAG, "waveform relative layout dimension is "+waveformW+" x "+waveformH);
+            //waveformW = 550;
+            //waveformH = 350;
             
         	RelativeLayout waveformLayout = (RelativeLayout) findViewById(R.id.Waveform);
         	RelativeLayout.LayoutParams adaptLayout = new RelativeLayout.LayoutParams(waveformW, waveformH);//the parameters are in pixel not dp
@@ -359,17 +359,17 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         	waveformLayout.setLayoutParams(adaptLayout);
             
         	//Only 1 of the folloiwng 2 lines is necessary
-        	//mWaveform.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);//for some strange reason, this is not setting the dimension of the custom view right
-        	mWaveform.setLayoutParams(new RelativeLayout.LayoutParams(waveformW, waveformH));//I have to use RelativeLayout.LayoutParams here because RelativeLayout is the parent view of this custom view
+        	mWaveform.setLayoutParams(new RelativeLayout.LayoutParams(waveformW, waveformH));//I have to use RelativeLayout.LayoutParams here because RelativeLayout is the parent view of this custom view; not working w Froyo Andriod 2.2
+        	//mWaveform.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);//for some strange reason, this is not setting the dimension of the custom view right w Froyo Andriod 2.2
         	
             mWaveform.setSize(waveformW, waveformH);
             waveform_w = waveformW;
             waveform_h = waveformH;
             
-            if (D) Log.i(TAG, mWaveform.getWidth()+" - "+mWaveform.getHeight());
+            if (D) if (D) Log.i(TAG, mWaveform.getWidth()+" - "+mWaveform.getHeight());
             
-            ch1_data = new int[waveform_w];
-            ch2_data = new int[waveform_w];
+            //Initiate waveform data array
+            wavefromArray = new int[waveform_w];
         }
     }
 
@@ -418,7 +418,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         
         //Why do we need to do this?
         /*for(int i=0; i<waveform_w; i++){
-        	ch1_data[i] = 0;
+        	wavefromArray[i] = 0;
         	ch2_data[i] = 0;
         }*/
         
@@ -738,13 +738,16 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 	                data_length = msg.arg1;
 	                
 	                x = frameCount % waveform_w;//framecount is 0 isn't it?
-	                raw = UByte(readBuf[2]);//This is the frame's 3rd byte containing the waveform data - is it for HR or SPO2 or both somehow?
-	                ch1_data[x] = raw;
-	                mWaveform.set_data(ch1_data, ch2_data);
+	                //raw = (int) readBuf[2];//UByte(readBuf[2]);//This is the frame's 3rd byte containing the waveform data - is it for HR or SPO2 or both somehow?
+	                //Byte in Java is -128 to 127 while the intended figure here is 0 to 255 so conversion is necessary
+	                raw = UByte(readBuf[2]);
+	                wavefromArray[x] = raw;
+	                if (D) Log.i(TAG, "waveform data "+raw);
+	                mWaveform.setData(wavefromArray);
 	                
 	                //Retrieve pulse rate and SpO2 and display on top right corner of the app's main screen
 	                getMeasurements(readBuf);
-	                
+	                frameCount++;
 	                break;
 	            case MESSAGE_DEVICE_NAME:
 	                // save the connected device's name
@@ -969,7 +972,6 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
         		break;
         	}
         }
-        frameCount++;
     	
     }
     
@@ -980,12 +982,19 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     		// if negative {
     		//return (int) ((b&0x7F) + 128 );
     		int a = (int) b;
-    		return (a + 255);
+    		return (a + 256);
     	} else return (int) b;
     }
+    //Hirwan's UByte method
+    /*private int UByte(byte b){
+    	if(b<0) // if negative
+    		return (int)( (b&0x7F) + 128 );
+    	else
+    		return (int)b;
+    }*/
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-    	Log.i(TAG, "request code was "+requestCode+" and result code was "+resultCode);
+    	//if (D) Log.i(TAG, "request code was "+requestCode+" and result code was "+resultCode);
         switch (requestCode) {
 	        case REQUEST_CONNECT_DEVICE:
 	        	//Again, there is no point having the following if because it is handling Bluetooth connection here
@@ -1021,14 +1030,14 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     public boolean onCreateOptionsMenu(Menu menu){
     	MenuInflater inflater = getMenuInflater();
     	inflater.inflate(R.menu.mainmenu, menu);
-    	Log.v("BluetoothOscilloscope", "onCreateOptionsMenu");
+    	//if (D) Log.v("BluetoothOscilloscope", "onCreateOptionsMenu");
     	return true;
     }
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item){
-    	Log.v("BluetoothOscilloscope#MenuItem", "" + item.getItemId());
-    	Log.v("BluetoothOscilloscope#R.id.settings", "" + R.id.settings);
+    	//if (D) Log.v("BluetoothOscilloscope#MenuItem", "" + item.getItemId());
+    	//if (D) Log.v("BluetoothOscilloscope#R.id.settings", "" + R.id.settings);
     	if (item.getItemId() == R.id.settings){
     		Intent intent = new Intent().setClass(this, MenuSettingsActivity.class);
     		this.startActivityForResult(intent, 0);
@@ -1053,7 +1062,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
     			String message = msg[i].getDisplayMessageBody();
     			if(message != null && message.length() > 0)
     			{
-    				Log.i("MessageListener:",  message);
+    				if (D) Log.i("MessageListener:",  message);
     				// to check sms keyword.. need to define the keyword
     				if(message.startsWith("startip"))
     				{
@@ -1086,7 +1095,7 @@ public class BluetoothPulseOximeter extends Activity implements  Button.OnClickL
 				}	
 				
 			}catch(Exception e)	{
-				Log.e("GetMessages", "fail", e);
+				if (D) Log.e("GetMessages", "fail", e);
 			}
 			return retMsgs;
 		}

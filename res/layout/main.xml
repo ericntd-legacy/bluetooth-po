@@ -34,8 +34,8 @@
         android:layout_height="@dimen/waveform_med_h"
         android:layout_alignParentLeft="false"
         android:layout_alignParentTop="false"
-        android:layout_below="@id/test_layout"
-        android:background="@drawable/waveform_border" >
+        android:layout_below="@id/test_layout" >
+        <!-- android:background="@drawable/waveform_border" > -->
 
         <org.projectproto.yuscope.WaveformView
             android:id="@id/WaveformArea"

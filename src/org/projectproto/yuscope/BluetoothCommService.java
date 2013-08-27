@@ -304,11 +304,12 @@ public class BluetoothCommService {
             try {
                 //tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             	
-            	//For devices < 4.0.3
+            	//Workaround for "Service discovery failed" exception
+            	//Method #1 - meant for devices < 4.0.3 but could work for 4.0.3 and above too
             	Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
                 tmp = (BluetoothSocket) m.invoke(device, 1);
                 
-                //For devices 4.0.3 and above
+                //Method #2 - For devices 4.0.3 (API 15) and above
                 /*Method method = device.getClass().getMethod("getUuids", null);
             	ParcelUuid[] phoneUuids = (ParcelUuid[]) method.invoke(device, null);
                 tmp = device.createRfcommSocketToServiceRecord(phoneUuids[0].getUuid());*/
@@ -377,7 +378,7 @@ public class BluetoothCommService {
         private final OutputStream mmOutStream;
 
         public ConnectedThread(BluetoothSocket socket) {
-            Log.d(TAG, "create ConnectedThread");
+            if (D) Log.d(TAG, "create ConnectedThread");
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
@@ -387,7 +388,7 @@ public class BluetoothCommService {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
-                Log.e(TAG, "temp sockets not created", e);
+                if (D) Log.e(TAG, "temp sockets not created", e);
             }
 
             mmInStream = tmpIn;
@@ -395,7 +396,7 @@ public class BluetoothCommService {
         }
 
         public void run() {
-            Log.i(TAG, "BEGIN mConnectedThread");
+            if (D) Log.i(TAG, "BEGIN mConnectedThread");
             //byte[] buffer = new byte[22];
             int bufSize = 5;//why 5 - frame size but why frame size?
             byte[] buffer = new byte[bufSize];
@@ -413,8 +414,9 @@ public class BluetoothCommService {
                     // Send the obtained bytes to the UI Activity
                 	//if (bytesReceived>-1) {
                 	mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_READ, bytesReceived, -1, buffer).sendToTarget();
+                	Thread.sleep(1000/75);//why sleep? smoothen wave but are these lost frames? Actually, those lost frames could help improving accuracy
                 	//}
-                	String msg = new String(buffer).substring(0, bytesReceived);
+                	//String msg = new String(buffer).substring(0, bytesReceived);
                         
                 	//Selecting data format #2	
                     /*try {
@@ -423,16 +425,19 @@ public class BluetoothCommService {
 						// TODO Auto-generated catch block
 						if (D) Log.e(TAG, "couldn't read response", e);
 					}*/
+                	//Thread.sleep(15);
                     
                 } catch (IOException e) {
-                    Log.e(TAG, "disconnected", e);
+                    if (D) Log.e(TAG, "disconnected", e);
                     connectionLost();
                     // Start the service over to restart listening mode
                     BluetoothCommService.this.start();
                     break;
                  
+                } catch (InterruptedException e) {  
+                	if (D) Log.e(TAG, "reading data from the oximeter is interrupted", e);
                 } catch (Exception e) {
-					Log.e(TAG, "some weird exception thrown", e);
+					if (D) Log.e(TAG, "some weird exception thrown", e);
 				}
             }
         }
@@ -445,7 +450,7 @@ public class BluetoothCommService {
         	sendCmd(dev.cmdSelectDF());
         	len = mmInStream.read(buffer);
 			dev.handleAck(buffer, len);
-			Log.d(TAG, "no of bytes received "+len+" - "+ new String(buffer));
+			if (D) Log.d(TAG, "no of bytes received "+len+" - "+ new String(buffer));
         }
         
         private void sendCmd(String cmd){
@@ -461,7 +466,7 @@ public class BluetoothCommService {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (Exception e) {
-				Log.d(TAG, "Some odd exception happens while sending commands to the pulse oximeter", e);
+				if (D) Log.d(TAG, "Some odd exception happens while sending commands to the pulse oximeter", e);
 			}
         }
 
@@ -477,7 +482,7 @@ public class BluetoothCommService {
                 mHandler.obtainMessage(BluetoothPulseOximeter.MESSAGE_WRITE, -1, -1, buffer)
                         .sendToTarget();
             } catch (IOException e) {
-                Log.e(TAG, "Exception during write", e);
+                if (D) Log.e(TAG, "Exception during write", e);
             }
         }
 
@@ -485,7 +490,7 @@ public class BluetoothCommService {
             try {
                 mmSocket.close();
             } catch (IOException e) {
-                Log.e(TAG, "close() of connect socket failed", e);
+                if (D) Log.e(TAG, "close() of connect socket failed", e);
             }
         }
         
